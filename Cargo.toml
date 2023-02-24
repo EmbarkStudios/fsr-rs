@@ -11,4 +11,4 @@ bitflags = "*"
 
 [build-dependencies]
 bindgen = "0.64.0"
-cmake = "0.1"   
+cmake = "0.1"

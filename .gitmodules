@@ -2,3 +2,4 @@
 	path = FidelityFX-FSR2
 	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR2.git
 	fetchRecurseSubmodules = false
+	update=none
