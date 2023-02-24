@@ -36,14 +36,6 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
 fn main() {
     let fsr2_dir = "FidelityFX-FSR2";
     let fsr2_binary_dir = format!("{}/bin/ffx_fsr2_api/", fsr2_dir);
-    let fsr2_binary_dir = std::path::Path::new(&fsr2_binary_dir)
-        .canonicalize()
-        .unwrap();
-
-    println!(
-        "cargo:rustc-link-search=native={}",
-        fsr2_binary_dir.as_os_str().to_str().unwrap()
-    );
 
     // link vulkan, stolen from ash
     {
@@ -88,6 +80,14 @@ fn main() {
     println!("cargo:rerun-if-changed={}", wrapper_vk);
 
     let vulkan_inc_dir = format!("-I{}/Include", env::var("VULKAN_SDK").unwrap_or_default());
+
+    let fsr2_binary_dir = std::path::Path::new(&fsr2_binary_dir)
+        .canonicalize()
+        .unwrap();
+    println!(
+        "cargo:rustc-link-search=native={}",
+        fsr2_binary_dir.as_os_str().to_str().unwrap()
+    );
 
     // Generate bindings
     let bindings = bindgen::Builder::default()
