@@ -62,7 +62,7 @@ fn main() {
         .define("FFX_FSR2_API_VK", "true")
         .define("FFX_FSR2_API_DX12", "false")
         .static_crt(true)
-        .build_target("ffx_fsr2_api_x64")
+        .no_build_target(true)
         .uses_cxx11()
         .build();
 
