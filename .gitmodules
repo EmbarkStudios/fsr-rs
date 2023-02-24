@@ -1,0 +1,3 @@
+[submodule "FidelityFX-FSR2"]
+	path = FidelityFX-FSR2
+	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR2.git
