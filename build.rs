@@ -61,7 +61,8 @@ fn main() {
     let _ = cmake::Config::new("FidelityFX-FSR2/src/ffx-fsr2-api")
         .define("FFX_FSR2_API_VK", "true")
         .define("FFX_FSR2_API_DX12", "false")
-        .no_build_target(true)
+        .static_crt(true)
+        .build_target("ffx_fsr2_api_x64")
         .uses_cxx11()
         .build();
 
