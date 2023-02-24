@@ -94,7 +94,6 @@ dependencies = [
  "bindgen",
  "bitflags",
  "cmake",
- "log",
 ]
 
 [[package]]

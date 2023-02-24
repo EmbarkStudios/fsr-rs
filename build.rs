@@ -35,7 +35,6 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
 
 fn main() {
     let fsr2_dir = "FidelityFX-FSR2";
-    let fsr2_binary_dir = format!("{}/bin/ffx_fsr2_api/", fsr2_dir);
 
     // link vulkan, stolen from ash
     {
@@ -59,16 +58,13 @@ fn main() {
     }
 
     // Build fsr2 and link
-    let _ = cmake::Config::new(fsr2_dir)
-        .define("GFX_API", "VK")
-        .build_target("ffx_fsr2_api_x64")
+    let _ = cmake::Config::new("FidelityFX-FSR2/src/ffx-fsr2-api")
+        .define("FFX_FSR2_API_VK", "true")
+        .define("FFX_FSR2_API_DX12", "false")
+        .no_build_target(true)
         .uses_cxx11()
         .build();
-    let _ = cmake::Config::new(fsr2_dir)
-        .define("GFX_API", "VK")
-        .build_target("ffx_fsr2_api_vk_x64")
-        .uses_cxx11()
-        .build();
+
     println!("cargo:rustc-link-lib=ffx_fsr2_api_x64");
     println!("cargo:rustc-link-lib=ffx_fsr2_api_vk_x64");
 
@@ -81,6 +77,7 @@ fn main() {
 
     let vulkan_inc_dir = format!("-I{}/Include", env::var("VULKAN_SDK").unwrap_or_default());
 
+    let fsr2_binary_dir = format!("{}/src/ffx-fsr2-api/bin/ffx_fsr2_api", fsr2_dir);
     let fsr2_binary_dir = std::path::Path::new(&fsr2_binary_dir)
         .canonicalize()
         .unwrap();
