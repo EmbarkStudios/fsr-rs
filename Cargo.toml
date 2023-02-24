@@ -10,7 +10,5 @@ ash = "*"
 bitflags = "*"
 
 [build-dependencies]
-env_logger = "*"
 bindgen = "0.64.0"
 cmake = "0.1"
-log = "*"
