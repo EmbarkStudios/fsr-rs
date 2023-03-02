@@ -1,12 +1,13 @@
-# TODO: Replace this line with the commented ones to actually run the action in your repo(s)
-on: public
-# on:
-#   push:
-#     branches:
-#       - main
-#     tags:
-#       - "*"
-#   pull_request:
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
 
 name: CI
 jobs:

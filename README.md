@@ -10,7 +10,7 @@
 # ` fsr2`
 
 <!--- FIXME: Write short catchy description/tagline of project --->
-**Rust bindings for [FidelityFX Super Resolution](https://github.com/GPUOpen-Effects/FidelityFX-FSR2)**
+**Rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2)**
 
 <!--- FIXME: Update crate, repo and CI workflow names here! Remove any that are not relevant --->
 
@@ -22,7 +22,7 @@
 [![Build status](https://github.com/EmbarkStudios/fsr2/workflows/CI/badge.svg)](https://github.com/EmbarkStudios/fsr2/actions)
 </div>
 
-Unsafe rust bindings for [FidelityFX Super Resolution](https://github.com/GPUOpen-Effects/FidelityFX-FSR2).
+Unsafe rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2). Currently only Vulkan is supported and enabled by default.
 
 API | Supported
 --|--
