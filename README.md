@@ -7,7 +7,7 @@
 <div align="center">
 
 <!--- FIXME: Pick an emoji and name your project! --->
-# ` fsr2`
+# `⚖ fsr2`
 
 <!--- FIXME: Write short catchy description/tagline of project --->
 **Rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2)**
