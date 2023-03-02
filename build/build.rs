@@ -15,8 +15,10 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
     build
         .files(sources.iter())
         .cpp(true)
+        .flag("-std=c++11")
         .define("UNICODE", "1")
         .define("_UNICODE", "1")
+        .define("wcscpy_s", "wcscpy")
         .include("shader_permutations/vk")
         .include(vk_include_dir);
 
@@ -24,6 +26,7 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
         // Doesn't actually matter if its using GCC, as long as its not MSVC this flag needs to be set.
         build
             .define("FFX_GCC", "1")
+            .define("__STDC_WANT_LIB_EXT1__", "1")
             .define("_countof(array)", "(sizeof(array) / sizeof(array[0]))");
     }
 
