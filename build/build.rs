@@ -47,7 +47,7 @@ fn main() {
         println!("cargo:rustc-link-lib={}", lib);
     }
 
-    let vk_include_dir = format!("{}/Include", env!("VULKAN_SDK"));
+    let vk_include_dir = format!("{}/Include", env::var("VULKAN_SDK").unwrap_or_default());
 
     build_fsr(&api_dir, &vk_include_dir);
     bindgen::generate_bindings(&api_dir, &vk_include_dir);
