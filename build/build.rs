@@ -15,6 +15,8 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
     build
         .files(sources.iter())
         .cpp(true)
+        .define("UNICODE", "1")
+        .define("_UNICODE", "1")
         .include("shader_permutations/vk")
         .include(vk_include_dir);
 
