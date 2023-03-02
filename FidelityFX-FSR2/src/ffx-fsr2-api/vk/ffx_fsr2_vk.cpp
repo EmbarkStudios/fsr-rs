@@ -27,6 +27,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <codecvt>
+#include <wchar.h>
 
 // prototypes for functions in the interface
 FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDeviceCapabilities* deviceCapabilities, FfxDevice device);
