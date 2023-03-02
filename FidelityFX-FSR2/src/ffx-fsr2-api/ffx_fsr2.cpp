@@ -23,7 +23,6 @@
 #include <cmath>        // for fabs, abs, sinf, sqrt, etc.
 #include <string.h>     // for memset
 #include <cfloat>       // for FLT_EPSILON
-#include <wchar.h>
 #include "ffx_fsr2.h"
 #define FFX_CPU
 #include "shaders/ffx_core.h"
