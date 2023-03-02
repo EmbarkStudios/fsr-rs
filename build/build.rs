@@ -8,13 +8,12 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
         .expect("Failed to find sources")
         .into_iter()
         .filter(|p| !p.as_ref().unwrap().to_str().unwrap().contains("dx12")) // filter dx12 shaders, currently only include vulkan.
-        .map(|p| p.unwrap().to_path_buf())
+        .map(|p| p.unwrap())
         .collect();
 
     cc::Build::new()
         .files(sources.iter())
         .cpp(true)
-        .define("FOO", Some("bar"))
         .include("shader_permutations/vk")
         .include(vk_include_dir)
         .compile("ffx_fsr2_api");
@@ -49,6 +48,6 @@ fn main() {
 
     let vk_include_dir = format!("{}/Include", env::var("VULKAN_SDK").unwrap_or_default());
 
-    build_fsr(&api_dir, &vk_include_dir);
-    bindgen::generate_bindings(&api_dir, &vk_include_dir);
+    build_fsr(api_dir, &vk_include_dir);
+    bindgen::generate_bindings(api_dir, &vk_include_dir);
 }
