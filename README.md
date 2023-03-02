@@ -29,6 +29,14 @@ API | Supported
 Vulkan | ✅
 DirectX12 | 🛠 (todo)
 
+# Updaing FSR2
+
+If you want to update the FSR2 version you need to do the following steps:
+
+* Replace all files in `FidelityFX-FSR2/src/ffx-fsr2-api` and remove the cmake files.
+* Build FSR and copy the permutation shaders to `shader_permutations/`
+* Potentially fix up some includes in the FSR source code to build on all platforms.
+
 ## Contributing
 
 [![Contributor Covenant](https://img.shields.io/badge/contributor%20covenant-v1.4-ff69b4.svg)](CODE_OF_CONDUCT.md)
