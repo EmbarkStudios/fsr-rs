@@ -15,7 +15,7 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
     build
         .files(sources.iter())
         .cpp(true)
-        .flag("-std=c++11")
+        .flag("-std=c++14")
         .define("UNICODE", "1")
         .define("_UNICODE", "1")
         .define("wcscpy_s", "wcscpy")
