@@ -1,5 +1,4 @@
-use std::env;
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 #[derive(Debug)]
 struct Renamer;
@@ -33,62 +32,17 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
     }
 }
 
-fn main() {
-    let fsr2_dir = "FidelityFX-FSR2";
-
-    // link vulkan, stolen from ash
-    {
-        let target_family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap();
-        let target_pointer_width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
-
-        println!("cargo:rerun-if-env-changed=VULKAN_SDK");
-        if let Ok(var) = env::var("VULKAN_SDK") {
-            let suffix = match (&*target_family, &*target_pointer_width) {
-                ("windows", "32") => "Lib32",
-                ("windows", "64") => "Lib",
-                _ => "lib",
-            };
-            println!("cargo:rustc-link-search={}/{}", var, suffix);
-        }
-        let lib = match &*target_family {
-            "windows" => "vulkan-1",
-            _ => "vulkan",
-        };
-        println!("cargo:rustc-link-lib={}", lib);
-    }
-    let vulkan_inc_dir = format!("{}/Include", env::var("VULKAN_SDK").unwrap_or_default());
-
-    let sources: Vec<PathBuf> = glob::glob("FidelityFX-FSR2/src/ffx-fsr2-api/**/*.cpp")
-        .expect("Failed to find sources")
-        .into_iter()
-        .filter(|p| !p.as_ref().unwrap().to_str().unwrap().contains("dx12")) // filter dx12 shaders
-        .map(|p| p.unwrap().to_path_buf())
-        .collect();
-
-    cc::Build::new()
-        .files(sources.iter())
-        .cpp(true)
-        .define("FOO", Some("bar"))
-        .include("shader_permutations/vk")
-        .include(vulkan_inc_dir.clone())
-        .compile("ffx_fsr2_api");
-
-    println!("cargo:rustc-link-lib=ffx_fsr2_api");
-
-    // Tell cargo to invalidate the built crate whenever the wrapper changes
-    let wrapper = "./FidelityFX-FSR2/src/ffx-fsr2-api/ffx_fsr2.h";
-    let wrapper_vk = "./FidelityFX-FSR2/src/ffx-fsr2-api/vk/ffx_fsr2_vk.h";
-
-    println!("cargo:rerun-if-changed={}", wrapper);
-    println!("cargo:rerun-if-changed={}", wrapper_vk);
+pub fn generate_bindings(api_dir: &str, vk_include_dir: &str) {
+    let wrapper = format!("{}/ffx_fsr2.h", api_dir);
+    let wrapper_vk = format!("{}/vk/ffx_fsr2_vk.h", api_dir);
 
     // Generate bindings
     let bindings = bindgen::Builder::default()
         .layout_tests(false)
         .derive_default(true)
         .prepend_enum_name(false)
-        .header("header.h") // get weird ignore list issues if i include fsr2 headers directly.
-        .clang_arg(format!("-I{}", vulkan_inc_dir))
+        .header("header.h") // get ignore list issues if I include fsr2 headers directly.
+        .clang_arg(format!("-I{}", vk_include_dir))
         .clang_arg("-xc++")
         .allowlist_file(wrapper)
         .allowlist_file(wrapper_vk)
