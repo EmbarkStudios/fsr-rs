@@ -19,6 +19,7 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
         .include(vk_include_dir);
 
     if !cfg!(windows) {
+        // Doesn't actually matter if its using GCC, as long as its not MSVC this flag needs to be set.
         build.define("FFX_GCC", "1");
     }
 
