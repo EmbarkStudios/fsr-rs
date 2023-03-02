@@ -11,12 +11,18 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
         .map(|p| p.unwrap())
         .collect();
 
-    cc::Build::new()
+    let mut build = cc::Build::new();
+    build
         .files(sources.iter())
         .cpp(true)
         .include("shader_permutations/vk")
-        .include(vk_include_dir)
-        .compile("ffx_fsr2_api");
+        .include(vk_include_dir);
+
+    if !cfg!(windows) {
+        build.define("FFX_GCC", "1");
+    }
+
+    build.compile("ffx_fsr2_api");
 
     // Link compiled lib
     println!("cargo:rustc-link-lib=ffx_fsr2_api");
