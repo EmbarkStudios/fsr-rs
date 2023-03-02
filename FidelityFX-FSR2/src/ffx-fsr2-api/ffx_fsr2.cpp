@@ -29,6 +29,7 @@
 #include "shaders/ffx_fsr1.h"
 #include "shaders/ffx_spd.h"
 #include "shaders/ffx_fsr2_callbacks_hlsl.h"
+#include <cwchar>
 
 #include "ffx_fsr2_maximum_bias.h"
 
