@@ -22,7 +22,9 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
 
     if !cfg!(windows) {
         // Doesn't actually matter if its using GCC, as long as its not MSVC this flag needs to be set.
-        build.define("FFX_GCC", "1");
+        build
+            .define("FFX_GCC", "1")
+            .define("_countof(array)", "(sizeof(array) / sizeof(array[0]))");
     }
 
     build.compile("ffx_fsr2_api");
