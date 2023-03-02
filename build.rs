@@ -56,18 +56,24 @@ fn main() {
         };
         println!("cargo:rustc-link-lib={}", lib);
     }
+    let vulkan_inc_dir = format!("{}/Include", env::var("VULKAN_SDK").unwrap_or_default());
 
-    // Build fsr2 and link
-    let _ = cmake::Config::new("FidelityFX-FSR2/src/ffx-fsr2-api")
-        .define("FFX_FSR2_API_VK", "true")
-        .define("FFX_FSR2_API_DX12", "false")
-        .static_crt(true)
-        .no_build_target(true)
-        .uses_cxx11()
-        .build();
+    let sources: Vec<PathBuf> = glob::glob("FidelityFX-FSR2/src/ffx-fsr2-api/**/*.cpp")
+        .expect("Failed to find sources")
+        .into_iter()
+        .filter(|p| !p.as_ref().unwrap().to_str().unwrap().contains("dx12")) // filter dx12 shaders
+        .map(|p| p.unwrap().to_path_buf())
+        .collect();
 
-    println!("cargo:rustc-link-lib=ffx_fsr2_api_x64");
-    println!("cargo:rustc-link-lib=ffx_fsr2_api_vk_x64");
+    cc::Build::new()
+        .files(sources.iter())
+        .cpp(true)
+        .define("FOO", Some("bar"))
+        .include("shader_permutations/vk")
+        .include(vulkan_inc_dir.clone())
+        .compile("ffx_fsr2_api");
+
+    println!("cargo:rustc-link-lib=ffx_fsr2_api");
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     let wrapper = "./FidelityFX-FSR2/src/ffx-fsr2-api/ffx_fsr2.h";
@@ -76,24 +82,13 @@ fn main() {
     println!("cargo:rerun-if-changed={}", wrapper);
     println!("cargo:rerun-if-changed={}", wrapper_vk);
 
-    let vulkan_inc_dir = format!("-I{}/Include", env::var("VULKAN_SDK").unwrap_or_default());
-
-    let fsr2_binary_dir = format!("{}/src/ffx-fsr2-api/bin/ffx_fsr2_api", fsr2_dir);
-    let fsr2_binary_dir = std::path::Path::new(&fsr2_binary_dir)
-        .canonicalize()
-        .unwrap();
-    println!(
-        "cargo:rustc-link-search=native={}",
-        fsr2_binary_dir.as_os_str().to_str().unwrap()
-    );
-
     // Generate bindings
     let bindings = bindgen::Builder::default()
         .layout_tests(false)
         .derive_default(true)
         .prepend_enum_name(false)
         .header("header.h") // get weird ignore list issues if i include fsr2 headers directly.
-        .clang_arg(vulkan_inc_dir)
+        .clang_arg(format!("-I{}", vulkan_inc_dir))
         .clang_arg("-xc++")
         .allowlist_file(wrapper)
         .allowlist_file(wrapper_vk)
