@@ -8,7 +8,7 @@ name: Publish Docs
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "sys-crate"]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
