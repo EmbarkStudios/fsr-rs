@@ -1,18 +1,9 @@
-<!-- Allow this file to not have a first line heading -->
-<!-- markdownlint-disable-file MD041 no-emphasis-as-heading -->
-
-<!-- inline html -->
-<!-- markdownlint-disable-file MD033 -->
-
 <div align="center">
 
-<!--- FIXME: Pick an emoji and name your project! --->
-# `⚖ fsr2`
+# 🌉 fsr2
 
-<!--- FIXME: Write short catchy description/tagline of project --->
 **Rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2)**
 
-<!--- FIXME: Update crate, repo and CI workflow names here! Remove any that are not relevant --->
 
 [![Embark](https://img.shields.io/badge/embark-open%20source-blueviolet.svg)](https://embark.dev)
 [![Embark](https://img.shields.io/badge/discord-ark-%237289da.svg?logo=discord)](https://discord.gg/dAuKfZS)
@@ -24,10 +15,12 @@
 
 Unsafe rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2). Currently only Vulkan is supported and enabled by default.
 
-API | Supported
---|--
-Vulkan | ✅
-DirectX12 | 🛠 (todo)
+API | Feature Flag | Crate
+--|--|--
+Vulkan | `vulkan` | [ash](https://crates.io/crates/ash)
+DirectX12 | `d3d12`| [windows](https://crates.io/crates/windows)
+
+`fsr2-sys` contains opaque types for dx12/vulkan which can be used with any api bindings.
 
 ## Contributing
 

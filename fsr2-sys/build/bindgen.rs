@@ -4,14 +4,7 @@ use std::{env, path::PathBuf};
 struct Renamer;
 impl bindgen::callbacks::ParseCallbacks for Renamer {
     fn item_name(&self, name: &str) -> Option<String> {
-        // Remove VK suffix. we put vulkan function in their own
-        let name = if name.ends_with("VK") {
-            name.replace("VK", "")
-        } else {
-            name.to_owned()
-        };
-
-        // Remove ffx/ffxfsr2 prefixes. we use namespaces.
+        // Remove ffx/ffxfsr2 prefixes.
         let name = name
             .replace("ffxFsr2", "")
             .replace("ffx", "")
@@ -32,9 +25,8 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
     }
 }
 
-pub fn generate_bindings(api_dir: &str, vk_include_dir: &str) {
+pub fn generate_bindings(api_dir: &str) {
     let wrapper = format!("{}/ffx_fsr2.h", api_dir);
-    let wrapper_vk = format!("{}/vk/ffx_fsr2_vk.h", api_dir);
 
     // Generate bindings
     let bindings = bindgen::Builder::default()
@@ -42,25 +34,7 @@ pub fn generate_bindings(api_dir: &str, vk_include_dir: &str) {
         .derive_default(true)
         .prepend_enum_name(false)
         .header(&wrapper)
-        .header(&wrapper_vk)
-        .clang_arg(format!("-I{}", vk_include_dir))
         .clang_arg("-xc++")
-        .blocklist_file(".*/vulkan.*")
-        .blocklist_item("VkPhysicalDevice")
-        .blocklist_item("VkPhysicalDevice_T")
-        .blocklist_item("VkDevice")
-        .blocklist_item("VkDevice_T")
-        .blocklist_item("VkCommandBuffer")
-        .blocklist_item("VkCommandBuffer_T")
-        .blocklist_item("VkImage")
-        .blocklist_item("VkImage_T")
-        .blocklist_item("VkBuffer")
-        .blocklist_item("VkBuffer_T")
-        .blocklist_item("VkImageView")
-        .blocklist_item("VkImageView_T")
-        .blocklist_item("VkFormat")
-        .blocklist_item("VkImageLayout")
-        .blocklist_item("PFN_vkGetDeviceProcAddr")
         .new_type_alias("CommandList")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .parse_callbacks(Box::new(Renamer))
@@ -72,5 +46,60 @@ pub fn generate_bindings(api_dir: &str, vk_include_dir: &str) {
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
         .write_to_file(out_path.join("bindings.rs"))
+        .expect("Couldn't write bindings!");
+}
+
+#[cfg(feature = "vulkan")]
+pub fn generate_vk_bindings(api_dir: &str, vk_include_dir: &str) {
+    let wrapper = format!("{}/ffx_fsr2.h", api_dir);
+    let wrapper_api = format!("{}/vk/ffx_fsr2_vk.h", api_dir);
+
+    // Generate bindings
+    let bindings = bindgen::Builder::default()
+        .layout_tests(false)
+        .derive_default(true)
+        .prepend_enum_name(false)
+        .header(&wrapper)
+        .header(&wrapper_api)
+        .clang_arg("-xc++")
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(Renamer))
+        .clang_arg(format!("-I{}", vk_include_dir))
+        .allowlist_recursively(false)
+        .allowlist_file(&wrapper_api)
+        .generate()
+        .expect("Unable to generate bindings");
+
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("vk_bindings.rs"))
+        .expect("Couldn't write bindings!");
+}
+
+#[cfg(feature = "d3d12")]
+pub fn generate_d3d12_bindings(api_dir: &str) {
+    let wrapper = format!("{}/ffx_fsr2.h", api_dir);
+    let wrapper_api = format!("{}/dx12/ffx_fsr2_dx12.h", api_dir);
+
+    // Generate bindings
+    let bindings = bindgen::Builder::default()
+        .layout_tests(false)
+        .derive_default(true)
+        .prepend_enum_name(false)
+        .header(&wrapper)
+        .header(&wrapper_api)
+        .clang_arg("-xc++")
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(Renamer))
+        .allowlist_recursively(false)
+        .allowlist_file(&wrapper_api)
+        .generate()
+        .expect("Unable to generate bindings");
+
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("d3d12_bindings.rs"))
         .expect("Couldn't write bindings!");
 }

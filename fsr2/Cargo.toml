@@ -8,7 +8,22 @@ license = "MIT"
 repository = "https://github.com/EmbarkStudios/fsr2"
 
 [dependencies]
-ash = "0.37"
 widestring = "1.0"
 bitflags = "1.3"
-fsr2-sys = { path = "../fsr2-sys" }
+fsr2-sys = { path = "../fsr2-sys", default-features = false }
+
+[dependencies.ash]
+version = "0.37"
+optional = true
+
+[dependencies.windows]
+version = "0.48"
+optional = true
+features = [
+    "Win32_Graphics_Direct3D12"
+]
+
+[features]
+default = ["vulkan"]
+vulkan = ["fsr2-sys/vulkan", "dep:ash"]
+d3d12 = ["fsr2-sys/d3d12", "dep:windows"]
