@@ -24,6 +24,6 @@ features = [
 ]
 
 [features]
-default = ["vulkan"]
+default = []
 vulkan = ["fsr2-sys/vulkan", "dep:ash"]
 d3d12 = ["fsr2-sys/d3d12", "dep:windows"]

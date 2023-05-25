@@ -19,21 +19,21 @@ pub struct ContextDescription<'a> {
     message_callback: Option<unsafe extern "C" fn(i32, *const u16)>,
 }
 
-impl Into<fsr2_sys::ContextDescription> for ContextDescription<'_> {
-    fn into(self) -> fsr2_sys::ContextDescription {
+impl From<ContextDescription<'_>> for fsr2_sys::ContextDescription {
+    fn from(val: ContextDescription<'_>) -> Self {
         fsr2_sys::ContextDescription {
-            callbacks: *self.interface,
-            flags: self.flags.bits,
+            callbacks: *val.interface,
+            flags: val.flags.bits,
             maxRenderSize: fsr2_sys::Dimensions2D {
-                width: self.max_render_size[0],
-                height: self.max_render_size[1],
+                width: val.max_render_size[0],
+                height: val.max_render_size[1],
             },
             displaySize: fsr2_sys::Dimensions2D {
-                width: self.display_size[0],
-                height: self.display_size[1],
+                width: val.display_size[0],
+                height: val.display_size[1],
             },
-            device: *self.device,
-            fpMessage: self.message_callback,
+            device: *val.device,
+            fpMessage: val.message_callback,
         }
     }
 }
@@ -216,12 +216,12 @@ impl From<DispatchDescription<'_>> for fsr2_sys::DispatchDescription {
             color: *val.color,
             transparencyAndComposition: val
                 .transparency_and_composition
-                .map(|r| *r)
+                .copied()
                 .unwrap_or_default(),
-            colorOpaqueOnly: val.color_opaque_only.map(|r| *r).unwrap_or_default(),
+            colorOpaqueOnly: val.color_opaque_only.copied().unwrap_or_default(),
             depth: *val.depth,
-            exposure: val.exposure.map(|r| *r).unwrap_or_default(),
-            reactive: val.reactive.map(|r| *r).unwrap_or_default(),
+            exposure: val.exposure.copied().unwrap_or_default(),
+            reactive: val.reactive.copied().unwrap_or_default(),
             motionVectors: *val.motion_vectors,
             autoReactiveMax: val.auto_reactive_max,
             autoTcScale: val.auto_tc_scale,

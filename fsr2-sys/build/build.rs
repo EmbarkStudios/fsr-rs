@@ -1,9 +1,7 @@
 mod bindgen;
 
 fn build_fsr(api_dir: &str, vk_include_dir: &str) {
-    let sources = glob::glob(&format!("{}/**/*.cpp", api_dir))
-        .expect("Failed to find sources")
-        .into_iter();
+    let sources = glob::glob(&format!("{}/**/*.cpp", api_dir)).expect("Failed to find sources");
 
     // Compile d3d12 / vulkan  backend into the lib
     #[cfg(not(feature = "d3d12"))]
@@ -11,7 +9,7 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
     #[cfg(not(feature = "vulkan"))]
     let sources = sources.filter(|p| !p.as_ref().unwrap().to_str().unwrap().contains("vk"));
 
-    let sources: Vec<_> = sources.map(|p| p.unwrap().to_path_buf()).collect();
+    let sources: Vec<_> = sources.map(|p| p.unwrap()).collect();
 
     cc::Build::new()
         .files(sources.iter())
@@ -49,11 +47,11 @@ fn main() {
         println!("cargo:rustc-link-lib={}", lib);
     }*/
 
-    build_fsr(&api_dir, &vk_include_dir);
-    bindgen::generate_bindings(&api_dir);
+    build_fsr(api_dir, vk_include_dir);
+    bindgen::generate_bindings(api_dir);
 
     #[cfg(feature = "vulkan")]
-    bindgen::generate_vk_bindings(&api_dir, &vk_include_dir);
+    bindgen::generate_vk_bindings(api_dir, vk_include_dir);
     #[cfg(feature = "d3d12")]
-    bindgen::generate_d3d12_bindings(&api_dir);
+    bindgen::generate_d3d12_bindings(api_dir);
 }
