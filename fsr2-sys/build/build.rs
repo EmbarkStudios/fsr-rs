@@ -15,7 +15,7 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
         .files(sources.iter())
         .cpp(true)
         .define("FOO", Some("bar"))
-        .include("shader_permutations/vk")
+        .include(&format!("{}/../../shader_permutations/vk", api_dir))
         .include(vk_include_dir)
         .compile("ffx_fsr2_api");
 
@@ -24,7 +24,7 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
 }
 
 fn main() {
-    let api_dir = "./FidelityFX-FSR2/src/ffx-fsr2-api";
+    let api_dir = "../FidelityFX-FSR2/src/ffx-fsr2-api";
 
     // link vulkan, stolen from ash
     {
@@ -47,7 +47,7 @@ fn main() {
         println!("cargo:rustc-link-lib={}", lib);
     }
 
-    let vk_include_dir = format!("{}/Include", env!("VULKAN_SDK"));
+    let vk_include_dir = "../Vulkan-Headers/include/";
 
     build_fsr(&api_dir, &vk_include_dir);
     bindgen::generate_bindings(&api_dir, &vk_include_dir);
