@@ -1,6 +1,6 @@
 mod bindgen;
 
-fn build_fsr(api_dir: &str, vk_include_dir: &str) {
+fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
     let sources = glob::glob(&format!("{}/**/*.cpp", api_dir)).expect("Failed to find sources");
 
     // Compile d3d12 / vulkan  backend into the lib
@@ -11,12 +11,15 @@ fn build_fsr(api_dir: &str, vk_include_dir: &str) {
 
     let sources: Vec<_> = sources.map(|p| p.unwrap()).collect();
 
-    cc::Build::new()
-        .files(sources.iter())
-        .cpp(true)
+    let mut build = cc::Build::new();
+    build.files(sources.iter()).cpp(true);
+    #[cfg(feature = "vulkan")]
+    build
         .include(&format!("{}/../../shader_permutations/vk", api_dir))
-        .include(vk_include_dir)
-        .compile("ffx_fsr2_api");
+        .include(_vk_include_dir);
+    #[cfg(feature = "d3d12")]
+    build.include(&format!("{}/../../shader_permutations/dx12", api_dir));
+    build.compile("ffx_fsr2_api");
 
     // Link compiled lib
     println!("cargo:rustc-link-lib=ffx_fsr2_api");
