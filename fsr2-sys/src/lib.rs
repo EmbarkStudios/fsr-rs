@@ -10,8 +10,11 @@ pub mod vk {
 
     type VkPhysicalDevice = u64;
     type VkDevice = u64;
+    type VkInstance = u64;
     type VkCommandBuffer = u64;
     type PFN_vkGetDeviceProcAddr = *const std::ffi::c_void;
+    type PFN_vkGetInstanceProcAddr = *const std::ffi::c_void;
+    type PFN_vkEnumerateDeviceExtensionProperties = *const std::ffi::c_void;
     type VkBuffer = u64;
     type VkImage = u64;
     type VkImageView = u64;

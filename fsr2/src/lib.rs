@@ -5,18 +5,69 @@ pub mod vk;
 
 pub use fsr2_sys::Device;
 pub use fsr2_sys::Interface;
+pub use fsr2_sys::MsgType;
 pub use fsr2_sys::Resource;
 pub use fsr2_sys::ResourceStates;
 pub struct CommandList(fsr2_sys::CommandList);
 pub struct Context(fsr2_sys::Context);
 
+#[repr(i32)]
+#[derive(Debug)]
+pub enum Error {
+    InvalidPointer = fsr2_sys::FFX_ERROR_INVALID_POINTER,
+    InvalidAlignment = fsr2_sys::FFX_ERROR_INVALID_ALIGNMENT,
+    InvalidSize = fsr2_sys::FFX_ERROR_INVALID_SIZE,
+    Eof = fsr2_sys::FFX_ERROR_EOF,
+    InvalidPath = fsr2_sys::FFX_ERROR_INVALID_PATH,
+    MalfmoredData = fsr2_sys::FFX_ERROR_MALFORMED_DATA,
+    OutOfMemory = fsr2_sys::FFX_ERROR_OUT_OF_MEMORY,
+    IncompleteInterface = fsr2_sys::FFX_ERROR_INCOMPLETE_INTERFACE,
+    InvalidEnum = fsr2_sys::FFX_ERROR_INVALID_ENUM,
+    InvalidArgument = fsr2_sys::FFX_ERROR_INVALID_ARGUMENT,
+    OutOfRange = fsr2_sys::FFX_ERROR_OUT_OF_RANGE,
+    NullDevice = fsr2_sys::FFX_ERROR_NULL_DEVICE,
+    BackendApiError = fsr2_sys::FFX_ERROR_BACKEND_API_ERROR,
+    InsufficientMemory = fsr2_sys::FFX_ERROR_INSUFFICIENT_MEMORY,
+    Unknown = 0,
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SuperError is here!")
+    }
+}
+
+impl std::error::Error for Error {}
+
+impl Error {
+    fn from_error_code(value: fsr2_sys::ErrorCode) -> Self {
+        match value {
+            fsr2_sys::FFX_ERROR_INVALID_POINTER => Self::InvalidPointer,
+            fsr2_sys::FFX_ERROR_INVALID_ALIGNMENT => Self::InvalidAlignment,
+            fsr2_sys::FFX_ERROR_INVALID_SIZE => Self::InvalidSize,
+            fsr2_sys::FFX_ERROR_EOF => Self::Eof,
+            fsr2_sys::FFX_ERROR_INVALID_PATH => Self::InvalidPath,
+            fsr2_sys::FFX_ERROR_MALFORMED_DATA => Self::MalfmoredData,
+            fsr2_sys::FFX_ERROR_OUT_OF_MEMORY => Self::OutOfMemory,
+            fsr2_sys::FFX_ERROR_INCOMPLETE_INTERFACE => Self::IncompleteInterface,
+            fsr2_sys::FFX_ERROR_INVALID_ENUM => Self::InvalidEnum,
+            fsr2_sys::FFX_ERROR_INVALID_ARGUMENT => Self::InvalidArgument,
+            fsr2_sys::FFX_ERROR_OUT_OF_RANGE => Self::OutOfRange,
+            fsr2_sys::FFX_ERROR_NULL_DEVICE => Self::NullDevice,
+            fsr2_sys::FFX_ERROR_BACKEND_API_ERROR => Self::BackendApiError,
+            fsr2_sys::FFX_ERROR_INSUFFICIENT_MEMORY => Self::InsufficientMemory,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 pub struct ContextDescription<'a> {
-    interface: &'a Interface,
-    flags: InitializationFlagBits,
-    max_render_size: [u32; 2],
-    display_size: [u32; 2],
-    device: &'a Device,
-    message_callback: Option<unsafe extern "C" fn(i32, *const u16)>,
+    pub interface: &'a Interface,
+    pub flags: InitializationFlagBits,
+    pub max_render_size: [u32; 2],
+    pub display_size: [u32; 2],
+    pub device: &'a Device,
+    pub message_callback: Option<unsafe extern "C" fn(i32, *const u16)>,
 }
 
 impl From<ContextDescription<'_>> for fsr2_sys::ContextDescription {
@@ -38,12 +89,15 @@ impl From<ContextDescription<'_>> for fsr2_sys::ContextDescription {
     }
 }
 
-pub fn create_context(desc: ContextDescription) -> Context {
+pub fn create_context(desc: ContextDescription<'_>) -> Result<Context, Error> {
     let mut context = fsr2_sys::Context::default();
     unsafe {
-        fsr2_sys::ContextCreate(&mut context, &desc.into());
+        let error = fsr2_sys::ContextCreate(&mut context, &desc.into());
+        if error != fsr2_sys::FFX_OK {
+            return Err(Error::from_error_code(error));
+        }
     }
-    Context(context)
+    Ok(Context(context))
 }
 
 bitflags::bitflags! {
@@ -60,17 +114,17 @@ bitflags::bitflags! {
     }
 }
 
-pub struct DispatchDescription<'a> {
-    pub cmd_list: &'a mut CommandList,
-    pub output: &'a mut Resource,
+pub struct DispatchDescription {
+    pub cmd_list: CommandList,
+    pub output: Resource,
 
-    pub color: &'a Resource,
-    pub depth: &'a Resource,
-    pub motion_vectors: &'a Resource,
-    pub color_opaque_only: Option<&'a Resource>,
-    pub exposure: Option<&'a Resource>,
-    pub reactive: Option<&'a Resource>,
-    pub transparency_and_composition: Option<&'a Resource>,
+    pub color: Resource,
+    pub depth: Resource,
+    pub motion_vectors: Resource,
+    pub color_opaque_only: Option<Resource>,
+    pub exposure: Option<Resource>,
+    pub reactive: Option<Resource>,
+    pub transparency_and_composition: Option<Resource>,
 
     pub enable_auto_reactive: bool,
     pub enable_sharpening: bool,
@@ -100,13 +154,13 @@ pub struct DispatchDescription<'a> {
     pub reset: bool,
 }
 
-impl<'a> DispatchDescription<'a> {
+impl DispatchDescription {
     pub fn new(
-        cmd_list: &'a mut CommandList,
-        color: &'a Resource,
-        depth: &'a Resource,
-        motion_vectors: &'a Resource,
-        output: &'a mut Resource,
+        cmd_list: CommandList,
+        color: Resource,
+        depth: Resource,
+        motion_vectors: Resource,
+        output: Resource,
         frame_time_delta: f32,
         render_size: [u32; 2],
     ) -> Self {
@@ -140,44 +194,44 @@ impl<'a> DispatchDescription<'a> {
         }
     }
 
-    pub fn camera(mut self, near: f32, far: f32, fov_y: f32) -> DispatchDescription<'a> {
+    pub fn camera(mut self, near: f32, far: f32, fov_y: f32) -> DispatchDescription {
         self.camera_near = near;
         self.camera_far = far;
         self.camera_fov_y = fov_y;
         self
     }
 
-    pub fn pre_exposure(mut self, value: f32) -> DispatchDescription<'a> {
+    pub fn pre_exposure(mut self, value: f32) -> DispatchDescription {
         self.pre_exposure = value;
         self
     }
 
-    pub fn view_space_to_meters_factor(mut self, value: f32) -> DispatchDescription<'a> {
+    pub fn view_space_to_meters_factor(mut self, value: f32) -> DispatchDescription {
         self.view_space_to_meters_factor = value;
         self
     }
 
-    pub fn exposure(mut self, resource: &'a Resource) -> DispatchDescription<'a> {
+    pub fn exposure(mut self, resource: Resource) -> DispatchDescription {
         self.exposure = Some(resource);
         self
     }
 
-    pub fn reactive(mut self, resource: &'a Resource) -> DispatchDescription<'a> {
+    pub fn reactive(mut self, resource: Resource) -> DispatchDescription {
         self.reactive = Some(resource);
         self
     }
 
-    pub fn motion_vector_scale(mut self, value: [f32; 2]) -> DispatchDescription<'a> {
+    pub fn motion_vector_scale(mut self, value: [f32; 2]) -> DispatchDescription {
         self.motion_vector_scale = value;
         self
     }
 
-    pub fn jitter_offfset(mut self, value: [f32; 2]) -> DispatchDescription<'a> {
+    pub fn jitter_offfset(mut self, value: [f32; 2]) -> DispatchDescription {
         self.jitter_offfset = value;
         self
     }
 
-    pub fn sharpness(mut self, sharpness: f32) -> DispatchDescription<'a> {
+    pub fn sharpness(mut self, sharpness: f32) -> DispatchDescription {
         self.enable_sharpening = true;
         self.sharpness = sharpness;
         self
@@ -185,13 +239,13 @@ impl<'a> DispatchDescription<'a> {
 
     pub fn auto_reactive(
         mut self,
-        color_opaque_only: &'a Resource,
-        transparency_and_composition: &'a Resource,
+        color_opaque_only: Resource,
+        transparency_and_composition: Resource,
         auto_reactive_max: f32,
         auto_tc_scale: f32,
         auto_reactive_scale: f32,
         auto_tc_threshold: f32,
-    ) -> DispatchDescription<'a> {
+    ) -> DispatchDescription {
         self.color_opaque_only = Some(color_opaque_only);
         self.transparency_and_composition = Some(transparency_and_composition);
         self.enable_auto_reactive = true;
@@ -202,27 +256,24 @@ impl<'a> DispatchDescription<'a> {
         self
     }
 
-    pub fn reset(mut self, value: bool) -> DispatchDescription<'a> {
+    pub fn reset(mut self, value: bool) -> DispatchDescription {
         self.reset = value;
         self
     }
 }
 
-impl From<DispatchDescription<'_>> for fsr2_sys::DispatchDescription {
+impl From<DispatchDescription> for fsr2_sys::DispatchDescription {
     fn from(val: DispatchDescription) -> Self {
         fsr2_sys::DispatchDescription {
             commandList: val.cmd_list.0,
-            output: *val.output,
-            color: *val.color,
-            transparencyAndComposition: val
-                .transparency_and_composition
-                .copied()
-                .unwrap_or_default(),
-            colorOpaqueOnly: val.color_opaque_only.copied().unwrap_or_default(),
-            depth: *val.depth,
-            exposure: val.exposure.copied().unwrap_or_default(),
-            reactive: val.reactive.copied().unwrap_or_default(),
-            motionVectors: *val.motion_vectors,
+            output: val.output,
+            color: val.color,
+            transparencyAndComposition: val.transparency_and_composition.unwrap_or_default(),
+            colorOpaqueOnly: val.color_opaque_only.unwrap_or_default(),
+            depth: val.depth,
+            exposure: val.exposure.unwrap_or_default(),
+            reactive: val.reactive.unwrap_or_default(),
+            motionVectors: val.motion_vectors,
             autoReactiveMax: val.auto_reactive_max,
             autoTcScale: val.auto_tc_scale,
             enableSharpening: val.enable_sharpening,
@@ -254,9 +305,19 @@ impl From<DispatchDescription<'_>> for fsr2_sys::DispatchDescription {
 }
 
 impl Context {
-    pub fn dispatch(&mut self, desc: DispatchDescription) {
-        unsafe {
-            fsr2_sys::ContextDispatch(&mut self.0, &desc.into());
+    pub unsafe fn dispatch(&mut self, desc: DispatchDescription) -> Result<(), Error> {
+        let error = unsafe { fsr2_sys::ContextDispatch(&mut self.0, &desc.into()) };
+        if error != fsr2_sys::FFX_OK {
+            return Err(Error::from_error_code(error));
         }
+        Ok(())
+    }
+
+    pub unsafe fn destroy(&mut self) -> Result<(), Error> {
+        let error = unsafe { fsr2_sys::ContextDestroy(&mut self.0) };
+        if error != fsr2_sys::FFX_OK {
+            return Err(Error::from_error_code(error));
+        }
+        Ok(())
     }
 }
