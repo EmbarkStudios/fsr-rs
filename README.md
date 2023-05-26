@@ -13,7 +13,7 @@
 [![Build status](https://github.com/EmbarkStudios/fsr2/workflows/CI/badge.svg)](https://github.com/EmbarkStudios/fsr2/actions)
 </div>
 
-Unsafe rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2). Currently only Vulkan is supported and enabled by default.
+Unsafe rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2).
 
 API | Feature Flag | Crate
 --|--|--

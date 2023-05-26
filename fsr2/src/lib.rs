@@ -1,3 +1,43 @@
+//! Unsafe Rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2)
+//!
+//!
+//! # Vulkan psuedo code
+//! ```no_run
+//! // Create the FSR interface
+//! // The context created below should not out live the scratch buffer.
+//! let mut scratch_buffer =
+//!     vec![0u8; fsr2::vk::get_scratch_memory_size(&vk_instance, vk_physical_device)];
+//! let interface = fsr2::vk::get_interface(
+//!     &vk_entry,
+//!     &vk_instance,
+//!     vk_physical_device,
+//!     &mut scratch_buffer,
+//! ).unwrap();
+//!
+//! // Create the FSR context
+//! let context_desc = fsr2::ContextDescription {
+//!     interface: &fsr_interface,
+//!     device: &fsr2::vk::get_device(vk_device),
+//!     display_size: [1920, 1080],
+//!     max_render_size: [1280, 720],
+//!     flags: fsr2::InitializationFlagBits::ENABLE_HIGH_DYNAMIC_RANGE
+//!     message_callback: None,
+//! };
+//! let context = fsr2::Context::new(context_desc).unwrap();
+//!
+//! // Dispatch gpu work
+//! let desc = fsr2::DispatchDescription::new(
+//!     vk_command_list.into(),
+//!     color,
+//!     depth,
+//!     velocity,
+//!     output,
+//!     delta_time_s,
+//!     [1280, 720],
+//! );
+//! fsr_context.dispatch(desc).expect("Failed to dispatch fsr");
+//! ```
+
 #[cfg(feature = "d3d12")]
 pub mod d3d12;
 #[cfg(feature = "vulkan")]
@@ -8,7 +48,10 @@ pub use fsr2_sys::Interface;
 pub use fsr2_sys::MsgType;
 pub use fsr2_sys::Resource;
 pub use fsr2_sys::ResourceStates;
+
+/// A typedef representing a command list or command buffer.
 pub struct CommandList(fsr2_sys::CommandList);
+/// A structure encapsulating the FidelityFX Super Resolution 2 context.
 pub struct Context(fsr2_sys::Context);
 
 #[repr(i32)]
@@ -87,17 +130,6 @@ impl From<ContextDescription<'_>> for fsr2_sys::ContextDescription {
             fpMessage: val.message_callback,
         }
     }
-}
-
-pub fn create_context(desc: ContextDescription<'_>) -> Result<Context, Error> {
-    let mut context = fsr2_sys::Context::default();
-    unsafe {
-        let error = fsr2_sys::ContextCreate(&mut context, &desc.into());
-        if error != fsr2_sys::FFX_OK {
-            return Err(Error::from_error_code(error));
-        }
-    }
-    Ok(Context(context))
 }
 
 bitflags::bitflags! {
@@ -305,6 +337,17 @@ impl From<DispatchDescription> for fsr2_sys::DispatchDescription {
 }
 
 impl Context {
+    pub fn new(desc: ContextDescription<'_>) -> Result<Self, Error> {
+        let mut context = fsr2_sys::Context::default();
+        unsafe {
+            let error = fsr2_sys::ContextCreate(&mut context, &desc.into());
+            if error != fsr2_sys::FFX_OK {
+                return Err(Error::from_error_code(error));
+            }
+        }
+        Ok(Context(context))
+    }
+
     pub unsafe fn dispatch(&mut self, desc: DispatchDescription) -> Result<(), Error> {
         let error = unsafe { fsr2_sys::ContextDispatch(&mut self.0, &desc.into()) };
         if error != fsr2_sys::FFX_OK {
