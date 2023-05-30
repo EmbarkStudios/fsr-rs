@@ -27,8 +27,7 @@
 #include "../ffx_fsr2_interface.h"
 
 #if defined(__cplusplus)
-extern "C"
-{
+extern "C" {
 #endif // #if defined(__cplusplus)
 
     /// Query how much memory is required for the Vulkan backend's scratch buffer.
@@ -43,18 +42,20 @@ extern "C"
     /// @param [in] device                      A Vulkan device.
     /// @param [in] scratchBuffer               A pointer to a buffer of memory which can be used by the DirectX(R)12 backend.
     /// @param [in] scratchBufferSize           The size (in bytes) of the buffer pointed to by <c><i>scratchBuffer</i></c>.
+    /// @param [in] instance                    A Vulkan instance. Provide a nullptr if you don't need to load function pointers from the instance directly.
     /// @param [in] physicalDevice              The Vulkan physical device that FSR 2.0 will be executed on.
-    /// @param [in] getDeviceProcAddr           A function pointer to vkGetDeviceProcAddr which is used to obtain all the other Vulkan functions.
-    ///
+    /// @param [in] getInstanceProcAddr         A function pointer to vkGetInstanceProcAddr which is used to obtain all the Vulkan instance functions.
+    /// @param [in] getDeviceProcAddr           A function pointer to vkGetDeviceProcAddr which is used to obtain all the Vulkan device functions.
+    /// 
     /// @retval
     /// FFX_OK                                  The operation completed successfully.
     /// @retval
     /// FFX_ERROR_CODE_INVALID_POINTER          The <c><i>interface</i></c> pointer was <c><i>NULL</i></c>.
-    ///
+    /// 
     /// @ingroup FSR2 VK
     FFX_API FfxErrorCode ffxFsr2GetInterfaceVK(
-        FfxFsr2Interface *outInterface,
-        void *scratchBuffer,
+        FfxFsr2Interface* outInterface,
+        void* scratchBuffer,
         size_t scratchBufferSize,
         VkInstance instance,
         VkPhysicalDevice physicalDevice,
@@ -64,20 +65,20 @@ extern "C"
     /// Create a <c><i>FfxFsr2Device</i></c> from a <c><i>VkDevice</i></c>.
     ///
     /// @param [in] device                      A pointer to the Vulkan logical device.
-    ///
+    /// 
     /// @returns
     /// An abstract FidelityFX device.
-    ///
+    /// 
     /// @ingroup FSR2 VK
     FFX_API FfxDevice ffxGetDeviceVK(VkDevice device);
 
     /// Create a <c><i>FfxCommandList</i></c> from a <c><i>VkCommandBuffer</i></c>.
     ///
     /// @param [in] cmdBuf                      A pointer to the Vulkan command buffer.
-    ///
+    /// 
     /// @returns
     /// An abstract FidelityFX command list.
-    ///
+    /// 
     /// @ingroup FSR2 VK
     FFX_API FfxCommandList ffxGetCommandListVK(VkCommandBuffer cmdBuf);
 
@@ -91,19 +92,19 @@ extern "C"
     /// @param [in] imgFormat                   The format of the image resource.
     /// @param [in] name                        (optional) A name string to identify the resource in debug mode.
     /// @param [in] state                       The state the resource is currently in.
-    ///
+    /// 
     /// @returns
     /// An abstract FidelityFX resources.
-    ///
+    /// 
     /// @ingroup FSR2 VK
-    FFX_API FfxResource ffxGetTextureResourceVK(FfxFsr2Context *context,
-                                                VkImage imgVk,
-                                                VkImageView imageView,
-                                                uint32_t width,
-                                                uint32_t height,
-                                                VkFormat imgFormat,
-                                                const wchar_t *name = nullptr,
-                                                FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ);
+    FFX_API FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, 
+        VkImage imgVk, 
+        VkImageView imageView, 
+        uint32_t width, 
+        uint32_t height, 
+        VkFormat imgFormat, 
+        const wchar_t* name = nullptr, 
+        FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ);
 
     /// Create a <c><i>FfxResource</i></c> from a <c><i>VkBuffer</i></c>.
     ///
@@ -112,49 +113,49 @@ extern "C"
     /// @param [in] size                        The size of the buffer resource.
     /// @param [in] name                        (optional) A name string to identify the resource in debug mode.
     /// @param [in] state                       The state the resource is currently in.
-    ///
+    /// 
     /// @returns
     /// An abstract FidelityFX resources.
-    ///
+    /// 
     /// @ingroup FSR2 VK
-    FFX_API FfxResource ffxGetBufferResourceVK(FfxFsr2Context *context,
-                                               VkBuffer bufVk,
-                                               uint32_t size,
-                                               const wchar_t *name = nullptr,
-                                               FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ);
+    FFX_API FfxResource ffxGetBufferResourceVK(FfxFsr2Context* context, 
+        VkBuffer bufVk, 
+        uint32_t size, 
+        const wchar_t* name = nullptr, 
+        FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ);
 
     /// Convert a <c><i>FfxResource</i></c> value to a <c><i>VkImage</i></c>.
     ///
     /// @param [in] context                     A pointer to a <c><i>FfxFsr2Context</i></c> structure.
     /// @param [in] resId                       A resourceID.
-    ///
+    /// 
     /// @returns
     /// A <c><i>VkImage</i></c>.
-    ///
+    /// 
     /// @ingroup FSR2 VK
-    FFX_API VkImage ffxGetVkImage(FfxFsr2Context *context, uint32_t resId);
+    FFX_API VkImage ffxGetVkImage(FfxFsr2Context* context, uint32_t resId);
 
     /// Convert a <c><i>FfxResource</i></c> value to a <c><i>VkImageView</i></c>.
     ///
     /// @param [in] context                     A pointer to a <c><i>FfxFsr2Context</i></c> structure.
     /// @param [in] resId                       A resourceID.
-    ///
+    /// 
     /// @returns
     /// A <c><i>VkImage</i></c>.
-    ///
+    /// 
     /// @ingroup FSR2 VK
-    FFX_API VkImageView ffxGetVkImageView(FfxFsr2Context *context, uint32_t resId);
+    FFX_API VkImageView ffxGetVkImageView(FfxFsr2Context* context, uint32_t resId);
 
     /// Convert a <c><i>FfxResource</i></c> value to a <c><i>VkImageLayout</i></c>.
     ///
     /// @param [in] context                     A pointer to a <c><i>FfxFsr2Context</i></c> structure.
     /// @param [in] resId                       A resourceID.
-    ///
+    /// 
     /// @returns
     /// A <c><i>VkImage</i></c>.
-    ///
+    /// 
     /// @ingroup FSR2 VK
-    FFX_API VkImageLayout ffxGetVkImageLayout(FfxFsr2Context *context, uint32_t resId);
+    FFX_API VkImageLayout ffxGetVkImageLayout(FfxFsr2Context* context, uint32_t resId);
 
 #if defined(__cplusplus)
 }
