@@ -41,7 +41,7 @@ pub fn generate_bindings(api_dir: &str) {
         .rustified_enum("FfxResourceStates");
 
     if cfg!(not(target_os = "windows")) {
-        bindings = bindings.clang_args(["-DFFX_GCC", "-fshort-wchar", "-fsigned-char"]);
+        bindings = bindings.clang_args(["-DFFX_GCC", "-fshort-wchar"]);
     }
 
     let bindings = bindings.generate().expect("Unable to generate bindings");
