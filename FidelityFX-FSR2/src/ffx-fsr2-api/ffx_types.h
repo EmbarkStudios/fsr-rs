@@ -22,6 +22,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #if defined (FFX_GCC)
 /// FidelityFX exported functions
@@ -61,7 +62,7 @@ extern "C" {
 #endif  // #ifdef __cplusplus
 
 /// An enumeration of surface formats.
-typedef enum FfxSurfaceFormat {
+typedef enum FfxSurfaceFormat : signed  {
 
     FFX_SURFACE_FORMAT_UNKNOWN,                     ///< Unknown format
     FFX_SURFACE_FORMAT_R32G32B32A32_TYPELESS,       ///< 32 bit per channel, 4 channel typeless format
@@ -86,7 +87,7 @@ typedef enum FfxSurfaceFormat {
 } FfxSurfaceFormat;
 
 /// An enumeration of resource usage.
-typedef enum FfxResourceUsage {
+typedef enum FfxResourceUsage : signed  {
 
     FFX_RESOURCE_USAGE_READ_ONLY = 0,               ///< No usage flags indicate a resource is read only.
     FFX_RESOURCE_USAGE_RENDERTARGET = (1<<0),       ///< Indicates a resource will be used as render target.
@@ -94,7 +95,7 @@ typedef enum FfxResourceUsage {
 } FfxResourceUsage;
 
 /// An enumeration of resource states.
-typedef enum FfxResourceStates {
+typedef enum FfxResourceStates : signed  {
 
     FFX_RESOURCE_STATE_UNORDERED_ACCESS = (1<<0),   ///< Indicates a resource is in the state to be used as UAV.
     FFX_RESOURCE_STATE_COMPUTE_READ = (1 << 1),     ///< Indicates a resource is in the state to be read by compute shaders.
@@ -104,35 +105,35 @@ typedef enum FfxResourceStates {
 } FfxResourceStates;
 
 /// An enumeration of surface dimensions.
-typedef enum FfxResourceDimension {
+typedef enum FfxResourceDimension : signed  {
 
     FFX_RESOURCE_DIMENSION_TEXTURE_1D,              ///< A resource with a single dimension.
     FFX_RESOURCE_DIMENSION_TEXTURE_2D,              ///< A resource with two dimensions.
 } FfxResourceDimension;
 
 /// An enumeration of surface dimensions.
-typedef enum FfxResourceFlags {
+typedef enum FfxResourceFlags : signed  {
 
     FFX_RESOURCE_FLAGS_NONE         = 0,            ///< No flags.
     FFX_RESOURCE_FLAGS_ALIASABLE    = (1<<0),       ///< A bit indicating a resource does not need to persist across frames.
 } FfxResourceFlags;
 
 /// An enumeration of all resource view types.
-typedef enum FfxResourceViewType {
+typedef enum FfxResourceViewType : signed  {
 
     FFX_RESOURCE_VIEW_UNORDERED_ACCESS,             ///< The resource view is an unordered access view (UAV).
     FFX_RESOURCE_VIEW_SHADER_READ,                  ///< The resource view is a shader resource view (SRV).
 } FfxResourceViewType;
 
 /// The type of filtering to perform when reading a texture.
-typedef enum FfxFilterType {
+typedef enum FfxFilterType : signed  {
 
     FFX_FILTER_TYPE_POINT,                          ///< Point sampling.
     FFX_FILTER_TYPE_LINEAR                          ///< Sampling with interpolation.
 } FfxFilterType;
 
 /// An enumeration of all supported shader models.
-typedef enum FfxShaderModel {
+typedef enum FfxShaderModel : signed {
 
     FFX_SHADER_MODEL_5_1,                           ///< Shader model 5.1.
     FFX_SHADER_MODEL_6_0,                           ///< Shader model 6.0.
@@ -146,7 +147,7 @@ typedef enum FfxShaderModel {
 } FfxShaderModel;
 
 // An enumeration for different resource types
-typedef enum FfxResourceType {
+typedef enum FfxResourceType : signed {
 
     FFX_RESOURCE_TYPE_BUFFER,                       ///< The resource is a buffer.
     FFX_RESOURCE_TYPE_TEXTURE1D,                    ///< The resource is a 1-dimensional texture.
@@ -155,14 +156,14 @@ typedef enum FfxResourceType {
 } FfxResourceType;
 
 /// An enumeration for different heap types
-typedef enum FfxHeapType {
+typedef enum FfxHeapType : signed {
 
     FFX_HEAP_TYPE_DEFAULT = 0,                      ///< Local memory.
     FFX_HEAP_TYPE_UPLOAD                            ///< Heap used for uploading resources.
 } FfxHeapType;
 
 /// An enumberation for different render job types
-typedef enum FfxGpuJobType {
+typedef enum FfxGpuJobType : signed {
 
     FFX_GPU_JOB_CLEAR_FLOAT = 0,                 ///< The GPU job is performing a floating-point clear.
     FFX_GPU_JOB_COPY = 1,                        ///< The GPU job is performing a copy.

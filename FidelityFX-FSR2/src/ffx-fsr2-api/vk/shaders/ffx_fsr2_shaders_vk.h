@@ -45,7 +45,7 @@ extern "C" {
     } Fsr2ShaderBlobVK;
 
     // The different options which contribute to permutations.
-    typedef enum Fs2ShaderPermutationOptionsVK {
+    typedef enum Fs2ShaderPermutationOptionsVK : signed {
 
         FSR2_SHADER_PERMUTATION_REPROJECT_USE_LANCZOS_TYPE = (1 << 0),    // FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE
         FSR2_SHADER_PERMUTATION_HDR_COLOR_INPUT = (1 << 1),    // FFX_FSR2_OPTION_HDR_COLOR_INPUT

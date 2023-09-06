@@ -21,167 +21,169 @@
 
 #include "../ffx_fsr2.h"
 #include "ffx_fsr2_vk.h"
-#include "shaders/ffx_fsr2_shaders_vk.h"  // include all the precompiled VK shaders for the FSR2 passes
+#include "shaders/ffx_fsr2_shaders_vk.h" // include all the precompiled VK shaders for the FSR2 passes
 #include "../ffx_fsr2_private.h"
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
 #include <codecvt>
+#include <locale>
 
 // prototypes for functions in the interface
-FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDeviceCapabilities* deviceCapabilities, FfxDevice device);
-FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevice device);
-FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface* backendInterface);
-FfxErrorCode CreateResourceVK(FfxFsr2Interface* backendInterface, const FfxCreateResourceDescription* desc, FfxResourceInternal* outResource);
-FfxErrorCode RegisterResourceVK(FfxFsr2Interface* backendInterface, const FfxResource* inResource, FfxResourceInternal* outResourceInternal);
-FfxErrorCode UnregisterResourcesVK(FfxFsr2Interface* backendInterface);
-FfxResourceDescription GetResourceDescriptorVK(FfxFsr2Interface* backendInterface, FfxResourceInternal resource);
-FfxErrorCode DestroyResourceVK(FfxFsr2Interface* backendInterface, FfxResourceInternal resource);
-FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass passId, const FfxPipelineDescription* desc, FfxPipelineState* outPass);
-FfxErrorCode DestroyPipelineVK(FfxFsr2Interface* backendInterface, FfxPipelineState* pipeline);
-FfxErrorCode ScheduleGpuJobVK(FfxFsr2Interface* backendInterface, const FfxGpuJobDescription* job);
-FfxErrorCode ExecuteGpuJobsVK(FfxFsr2Interface* backendInterface, FfxCommandList commandList);
+FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface *backendInterface, FfxDeviceCapabilities *deviceCapabilities, FfxDevice device);
+FfxErrorCode CreateBackendContextVK(FfxFsr2Interface *backendInterface, FfxDevice device);
+FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface *backendInterface);
+FfxErrorCode CreateResourceVK(FfxFsr2Interface *backendInterface, const FfxCreateResourceDescription *desc, FfxResourceInternal *outResource);
+FfxErrorCode RegisterResourceVK(FfxFsr2Interface *backendInterface, const FfxResource *inResource, FfxResourceInternal *outResourceInternal);
+FfxErrorCode UnregisterResourcesVK(FfxFsr2Interface *backendInterface);
+FfxResourceDescription GetResourceDescriptorVK(FfxFsr2Interface *backendInterface, FfxResourceInternal resource);
+FfxErrorCode DestroyResourceVK(FfxFsr2Interface *backendInterface, FfxResourceInternal resource);
+FfxErrorCode CreatePipelineVK(FfxFsr2Interface *backendInterface, FfxFsr2Pass passId, const FfxPipelineDescription *desc, FfxPipelineState *outPass);
+FfxErrorCode DestroyPipelineVK(FfxFsr2Interface *backendInterface, FfxPipelineState *pipeline);
+FfxErrorCode ScheduleGpuJobVK(FfxFsr2Interface *backendInterface, const FfxGpuJobDescription *job);
+FfxErrorCode ExecuteGpuJobsVK(FfxFsr2Interface *backendInterface, FfxCommandList commandList);
 
-#define FSR2_MAX_QUEUED_FRAMES              ( 4)
-#define FSR2_MAX_RESOURCE_COUNT             (64)
-#define FSR2_MAX_STAGING_RESOURCE_COUNT     ( 8)
-#define FSR2_MAX_BARRIERS                   (16)
-#define FSR2_MAX_GPU_JOBS                   (32)
-#define FSR2_MAX_IMAGE_COPY_MIPS            (32)
-#define FSR2_MAX_SAMPLERS                   ( 2)
-#define FSR2_MAX_UNIFORM_BUFFERS            ( 4)
-#define FSR2_MAX_IMAGE_VIEWS                (32)
-#define FSR2_MAX_BUFFERED_DESCRIPTORS       (FFX_FSR2_PASS_COUNT * FSR2_MAX_QUEUED_FRAMES)
-#define FSR2_UBO_RING_BUFFER_SIZE           (FSR2_MAX_BUFFERED_DESCRIPTORS * FSR2_MAX_UNIFORM_BUFFERS)
-#define FSR2_UBO_MEMORY_BLOCK_SIZE          (FSR2_UBO_RING_BUFFER_SIZE * 256)
+#define FSR2_MAX_QUEUED_FRAMES (4)
+#define FSR2_MAX_RESOURCE_COUNT (64)
+#define FSR2_MAX_STAGING_RESOURCE_COUNT (8)
+#define FSR2_MAX_BARRIERS (16)
+#define FSR2_MAX_GPU_JOBS (32)
+#define FSR2_MAX_IMAGE_COPY_MIPS (32)
+#define FSR2_MAX_SAMPLERS (2)
+#define FSR2_MAX_UNIFORM_BUFFERS (4)
+#define FSR2_MAX_IMAGE_VIEWS (32)
+#define FSR2_MAX_BUFFERED_DESCRIPTORS (FFX_FSR2_PASS_COUNT * FSR2_MAX_QUEUED_FRAMES)
+#define FSR2_UBO_RING_BUFFER_SIZE (FSR2_MAX_BUFFERED_DESCRIPTORS * FSR2_MAX_UNIFORM_BUFFERS)
+#define FSR2_UBO_MEMORY_BLOCK_SIZE (FSR2_UBO_RING_BUFFER_SIZE * 256)
 
-typedef struct BackendContext_VK {
+typedef struct BackendContext_VK
+{
 
     // store for resources and resourceViews
     typedef struct Resource
     {
 #ifdef _DEBUG
-        char                    resourceName[64] = {};
+        char resourceName[64] = {};
 #endif
-        VkImage                 imageResource;
-        VkImageAspectFlags      aspectFlags;
-        VkBuffer                bufferResource;
-        VkDeviceMemory          deviceMemory;
-        VkMemoryPropertyFlags   memoryProperties;
-        FfxResourceDescription  resourceDescription;
-        FfxResourceStates       state;
-        VkImageView             allMipsImageView;
-        VkImageView             singleMipImageViews[FSR2_MAX_IMAGE_VIEWS];
-        bool                    undefined;
+        VkImage imageResource;
+        VkImageAspectFlags aspectFlags;
+        VkBuffer bufferResource;
+        VkDeviceMemory deviceMemory;
+        VkMemoryPropertyFlags memoryProperties;
+        FfxResourceDescription resourceDescription;
+        FfxResourceStates state;
+        VkImageView allMipsImageView;
+        VkImageView singleMipImageViews[FSR2_MAX_IMAGE_VIEWS];
+        bool undefined;
     } Resource;
 
     typedef struct UniformBuffer
     {
         VkBuffer bufferResource;
-        uint8_t* pData;
+        uint8_t *pData;
     } UniformBuffer;
 
     typedef struct PipelineLayout
     {
         VkDescriptorSetLayout descriptorSetLayout;
-        VkDescriptorSet       descriptorSets[FSR2_MAX_QUEUED_FRAMES];
-        uint32_t              descriptorSetIndex;
-        VkPipelineLayout      pipelineLayout;
+        VkDescriptorSet descriptorSets[FSR2_MAX_QUEUED_FRAMES];
+        uint32_t descriptorSetIndex;
+        VkPipelineLayout pipelineLayout;
     } PipelineLayout;
 
     typedef struct VKFunctionTable
     {
-        PFN_vkGetDeviceProcAddr             vkGetDeviceProcAddr = 0;
-        PFN_vkSetDebugUtilsObjectNameEXT    vkSetDebugUtilsObjectNameEXT = 0;
-        PFN_vkCreateDescriptorPool          vkCreateDescriptorPool = 0;
-        PFN_vkCreateSampler                 vkCreateSampler = 0;
-        PFN_vkCreateDescriptorSetLayout     vkCreateDescriptorSetLayout = 0;
-        PFN_vkCreateBuffer                  vkCreateBuffer = 0;
-        PFN_vkCreateImage                   vkCreateImage = 0;
-        PFN_vkCreateImageView               vkCreateImageView = 0;
-        PFN_vkCreateShaderModule            vkCreateShaderModule = 0;
-        PFN_vkCreatePipelineLayout          vkCreatePipelineLayout = 0;
-        PFN_vkCreateComputePipelines        vkCreateComputePipelines = 0;
-        PFN_vkDestroyPipelineLayout         vkDestroyPipelineLayout = 0;
-        PFN_vkDestroyPipeline               vkDestroyPipeline = 0;
-        PFN_vkDestroyImage                  vkDestroyImage = 0;
-        PFN_vkDestroyImageView              vkDestroyImageView = 0;
-        PFN_vkDestroyBuffer                 vkDestroyBuffer = 0;
-        PFN_vkDestroyDescriptorSetLayout    vkDestroyDescriptorSetLayout = 0;
-        PFN_vkDestroyDescriptorPool         vkDestroyDescriptorPool = 0;
-        PFN_vkDestroySampler                vkDestroySampler = 0;
-        PFN_vkDestroyShaderModule           vkDestroyShaderModule = 0;
-        PFN_vkGetBufferMemoryRequirements   vkGetBufferMemoryRequirements = 0;
-        PFN_vkGetImageMemoryRequirements    vkGetImageMemoryRequirements = 0;
-        PFN_vkAllocateDescriptorSets        vkAllocateDescriptorSets = 0;
-        PFN_vkAllocateMemory                vkAllocateMemory = 0;
-        PFN_vkFreeMemory                    vkFreeMemory = 0;
-        PFN_vkMapMemory                     vkMapMemory = 0;
-        PFN_vkUnmapMemory                   vkUnmapMemory = 0;
-        PFN_vkBindBufferMemory              vkBindBufferMemory = 0;
-        PFN_vkBindImageMemory               vkBindImageMemory = 0;
-        PFN_vkUpdateDescriptorSets          vkUpdateDescriptorSets = 0;
-        PFN_vkFlushMappedMemoryRanges       vkFlushMappedMemoryRanges = 0;
-        PFN_vkCmdPipelineBarrier            vkCmdPipelineBarrier = 0;
-        PFN_vkCmdBindPipeline               vkCmdBindPipeline = 0;
-        PFN_vkCmdBindDescriptorSets         vkCmdBindDescriptorSets = 0;
-        PFN_vkCmdDispatch                   vkCmdDispatch = 0;
-        PFN_vkCmdCopyBuffer                 vkCmdCopyBuffer = 0;
-        PFN_vkCmdCopyImage                  vkCmdCopyImage = 0;
-        PFN_vkCmdCopyBufferToImage          vkCmdCopyBufferToImage = 0;
-        PFN_vkCmdClearColorImage            vkCmdClearColorImage = 0;
+        PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr = 0;
+        PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = 0;
+        PFN_vkCreateDescriptorPool vkCreateDescriptorPool = 0;
+        PFN_vkCreateSampler vkCreateSampler = 0;
+        PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout = 0;
+        PFN_vkCreateBuffer vkCreateBuffer = 0;
+        PFN_vkCreateImage vkCreateImage = 0;
+        PFN_vkCreateImageView vkCreateImageView = 0;
+        PFN_vkCreateShaderModule vkCreateShaderModule = 0;
+        PFN_vkCreatePipelineLayout vkCreatePipelineLayout = 0;
+        PFN_vkCreateComputePipelines vkCreateComputePipelines = 0;
+        PFN_vkDestroyPipelineLayout vkDestroyPipelineLayout = 0;
+        PFN_vkDestroyPipeline vkDestroyPipeline = 0;
+        PFN_vkDestroyImage vkDestroyImage = 0;
+        PFN_vkDestroyImageView vkDestroyImageView = 0;
+        PFN_vkDestroyBuffer vkDestroyBuffer = 0;
+        PFN_vkDestroyDescriptorSetLayout vkDestroyDescriptorSetLayout = 0;
+        PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool = 0;
+        PFN_vkDestroySampler vkDestroySampler = 0;
+        PFN_vkDestroyShaderModule vkDestroyShaderModule = 0;
+        PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements = 0;
+        PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements = 0;
+        PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets = 0;
+        PFN_vkAllocateMemory vkAllocateMemory = 0;
+        PFN_vkFreeMemory vkFreeMemory = 0;
+        PFN_vkMapMemory vkMapMemory = 0;
+        PFN_vkUnmapMemory vkUnmapMemory = 0;
+        PFN_vkBindBufferMemory vkBindBufferMemory = 0;
+        PFN_vkBindImageMemory vkBindImageMemory = 0;
+        PFN_vkUpdateDescriptorSets vkUpdateDescriptorSets = 0;
+        PFN_vkFlushMappedMemoryRanges vkFlushMappedMemoryRanges = 0;
+        PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier = 0;
+        PFN_vkCmdBindPipeline vkCmdBindPipeline = 0;
+        PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets = 0;
+        PFN_vkCmdDispatch vkCmdDispatch = 0;
+        PFN_vkCmdCopyBuffer vkCmdCopyBuffer = 0;
+        PFN_vkCmdCopyImage vkCmdCopyImage = 0;
+        PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage = 0;
+        PFN_vkCmdClearColorImage vkCmdClearColorImage = 0;
 
-        PFN_vkGetInstanceProcAddr                vkGetInstanceProcAddr = 0;
-        PFN_vkGetPhysicalDeviceProperties        vkGetPhysicalDeviceProperties = 0;
-        PFN_vkGetPhysicalDeviceMemoryProperties  vkGetPhysicalDeviceMemoryProperties = 0;
+        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = 0;
+        PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties = 0;
+        PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties = 0;
         PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties = 0;
-        PFN_vkGetPhysicalDeviceFeatures2         vkGetPhysicalDeviceFeatures2 = 0;
-        PFN_vkGetPhysicalDeviceProperties2       vkGetPhysicalDeviceProperties2 = 0;
+        PFN_vkGetPhysicalDeviceFeatures2 vkGetPhysicalDeviceFeatures2 = 0;
+        PFN_vkGetPhysicalDeviceProperties2 vkGetPhysicalDeviceProperties2 = 0;
     } VkFunctionTable;
 
-    VkPhysicalDevice        physicalDevice = nullptr;
-    VkInstance              instance = nullptr;
-    VkDevice                device = nullptr;
-    VkFunctionTable         vkFunctionTable = {};
-                            
-    uint32_t                gpuJobCount = 0;
-    FfxGpuJobDescription    gpuJobs[FSR2_MAX_GPU_JOBS] = {};
+    VkPhysicalDevice physicalDevice = nullptr;
+    VkInstance instance = nullptr;
+    VkDevice device = nullptr;
+    VkFunctionTable vkFunctionTable = {};
 
-    uint32_t                nextStaticResource = 0;
-    uint32_t                nextDynamicResource = 0;
-    uint32_t                stagingResourceCount = 0;
-    Resource                resources[FSR2_MAX_RESOURCE_COUNT] = {};
-    FfxResourceInternal     stagingResources[FSR2_MAX_STAGING_RESOURCE_COUNT] = {};
+    uint32_t gpuJobCount = 0;
+    FfxGpuJobDescription gpuJobs[FSR2_MAX_GPU_JOBS] = {};
 
-    VkDescriptorPool        descPool = nullptr;
-    VkDescriptorSetLayout   samplerDescriptorSetLayout = nullptr;
-    VkDescriptorSet         samplerDescriptorSet = nullptr;
-    uint32_t                allocatedPipelineLayoutCount = 0;
-    PipelineLayout          pipelineLayouts[FFX_FSR2_PASS_COUNT] = {};
-    VkSampler               pointSampler = nullptr;
-    VkSampler               linearSampler = nullptr;
-    
-    VkDeviceMemory          uboMemory = nullptr;
-    VkMemoryPropertyFlags   uboMemoryProperties = 0;
-    UniformBuffer           uboRingBuffer[FSR2_UBO_RING_BUFFER_SIZE] = {};
-    uint32_t                uboRingBufferIndex = 0;
- 
-    VkImageMemoryBarrier    imageMemoryBarriers[FSR2_MAX_BARRIERS] = {};
-    VkBufferMemoryBarrier   bufferMemoryBarriers[FSR2_MAX_BARRIERS] = {};
-    uint32_t                scheduledImageBarrierCount = 0;
-    uint32_t                scheduledBufferBarrierCount = 0;
-    VkPipelineStageFlags    srcStageMask = 0;
-    VkPipelineStageFlags    dstStageMask = 0;
+    uint32_t nextStaticResource = 0;
+    uint32_t nextDynamicResource = 0;
+    uint32_t stagingResourceCount = 0;
+    Resource resources[FSR2_MAX_RESOURCE_COUNT] = {};
+    FfxResourceInternal stagingResources[FSR2_MAX_STAGING_RESOURCE_COUNT] = {};
 
-    uint32_t                numDeviceExtensions = 0;
-    VkExtensionProperties*  extensionProperties = nullptr;
+    VkDescriptorPool descPool = nullptr;
+    VkDescriptorSetLayout samplerDescriptorSetLayout = nullptr;
+    VkDescriptorSet samplerDescriptorSet = nullptr;
+    uint32_t allocatedPipelineLayoutCount = 0;
+    PipelineLayout pipelineLayouts[FFX_FSR2_PASS_COUNT] = {};
+    VkSampler pointSampler = nullptr;
+    VkSampler linearSampler = nullptr;
+
+    VkDeviceMemory uboMemory = nullptr;
+    VkMemoryPropertyFlags uboMemoryProperties = 0;
+    UniformBuffer uboRingBuffer[FSR2_UBO_RING_BUFFER_SIZE] = {};
+    uint32_t uboRingBufferIndex = 0;
+
+    VkImageMemoryBarrier imageMemoryBarriers[FSR2_MAX_BARRIERS] = {};
+    VkBufferMemoryBarrier bufferMemoryBarriers[FSR2_MAX_BARRIERS] = {};
+    uint32_t scheduledImageBarrierCount = 0;
+    uint32_t scheduledBufferBarrierCount = 0;
+    VkPipelineStageFlags srcStageMask = 0;
+    VkPipelineStageFlags dstStageMask = 0;
+
+    uint32_t numDeviceExtensions = 0;
+    VkExtensionProperties *extensionProperties = nullptr;
 
 } BackendContext_VK;
 
 FFX_API size_t ffxFsr2GetScratchMemorySizeVK(VkPhysicalDevice physicalDevice, PFN_vkEnumerateDeviceExtensionProperties enumerateDeviceExtensionProperties)
 {
     uint32_t numExtensions = 0;
-    
+
     if (enumerateDeviceExtensionProperties && physicalDevice)
         enumerateDeviceExtensionProperties(physicalDevice, nullptr, &numExtensions, nullptr);
 #ifndef DYNAMIC_LINK_VULKAN
@@ -193,8 +195,8 @@ FFX_API size_t ffxFsr2GetScratchMemorySizeVK(VkPhysicalDevice physicalDevice, PF
 }
 
 FfxErrorCode ffxFsr2GetInterfaceVK(
-    FfxFsr2Interface* outInterface,
-    void* scratchBuffer,
+    FfxFsr2Interface *outInterface,
+    void *scratchBuffer,
     size_t scratchBufferSize,
     VkInstance instance,
     VkPhysicalDevice physicalDevice,
@@ -226,7 +228,7 @@ FfxErrorCode ffxFsr2GetInterfaceVK(
     outInterface->scratchBuffer = scratchBuffer;
     outInterface->scratchBufferSize = scratchBufferSize;
 
-    BackendContext_VK* context = (BackendContext_VK*)scratchBuffer;
+    BackendContext_VK *context = (BackendContext_VK *)scratchBuffer;
 
     context->instance = instance;
     context->physicalDevice = physicalDevice;
@@ -236,11 +238,12 @@ FfxErrorCode ffxFsr2GetInterfaceVK(
     return FFX_OK;
 }
 
-void loadVKFunctions(BackendContext_VK* backendContext, PFN_vkGetDeviceProcAddr getDeviceProcAddr, PFN_vkGetInstanceProcAddr getInstanceProcAddr)
+void loadVKFunctions(BackendContext_VK *backendContext, PFN_vkGetDeviceProcAddr getDeviceProcAddr, PFN_vkGetInstanceProcAddr getInstanceProcAddr)
 {
     FFX_ASSERT(NULL != backendContext);
 
-    if (backendContext->instance) {
+    if (backendContext->instance)
+    {
         backendContext->vkFunctionTable.vkEnumerateDeviceExtensionProperties = (PFN_vkEnumerateDeviceExtensionProperties)getInstanceProcAddr(backendContext->instance, "vkEnumerateDeviceExtensionProperties");
         backendContext->vkFunctionTable.vkGetPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties)getInstanceProcAddr(backendContext->instance, "vkGetPhysicalDeviceProperties");
         backendContext->vkFunctionTable.vkGetPhysicalDeviceMemoryProperties = (PFN_vkGetPhysicalDeviceMemoryProperties)getInstanceProcAddr(backendContext->instance, "vkGetPhysicalDeviceMemoryProperties");
@@ -248,7 +251,8 @@ void loadVKFunctions(BackendContext_VK* backendContext, PFN_vkGetDeviceProcAddr 
         backendContext->vkFunctionTable.vkGetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2)getInstanceProcAddr(backendContext->instance, "vkGetPhysicalDeviceProperties2");
     }
 #ifndef DYNAMIC_LINK_VULKAN
-    else {
+    else
+    {
         backendContext->vkFunctionTable.vkEnumerateDeviceExtensionProperties = vkEnumerateDeviceExtensionProperties;
         backendContext->vkFunctionTable.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
         backendContext->vkFunctionTable.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
@@ -258,7 +262,7 @@ void loadVKFunctions(BackendContext_VK* backendContext, PFN_vkGetDeviceProcAddr 
 #endif
 
     backendContext->vkFunctionTable.vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)getDeviceProcAddr(backendContext->device, "vkSetDebugUtilsObjectNameEXT");
-    backendContext->vkFunctionTable.vkFlushMappedMemoryRanges    = (PFN_vkFlushMappedMemoryRanges)getDeviceProcAddr(backendContext->device, "vkFlushMappedMemoryRanges");
+    backendContext->vkFunctionTable.vkFlushMappedMemoryRanges = (PFN_vkFlushMappedMemoryRanges)getDeviceProcAddr(backendContext->device, "vkFlushMappedMemoryRanges");
     backendContext->vkFunctionTable.vkCreateDescriptorPool = (PFN_vkCreateDescriptorPool)getDeviceProcAddr(backendContext->device, "vkCreateDescriptorPool");
     backendContext->vkFunctionTable.vkCreateSampler = (PFN_vkCreateSampler)getDeviceProcAddr(backendContext->device, "vkCreateSampler");
     backendContext->vkFunctionTable.vkCreateDescriptorSetLayout = (PFN_vkCreateDescriptorSetLayout)getDeviceProcAddr(backendContext->device, "vkCreateDescriptorSetLayout");
@@ -297,9 +301,9 @@ void loadVKFunctions(BackendContext_VK* backendContext, PFN_vkGetDeviceProcAddr 
     backendContext->vkFunctionTable.vkCmdClearColorImage = (PFN_vkCmdClearColorImage)getDeviceProcAddr(backendContext->device, "vkCmdClearColorImage");
 }
 
-void setVKObjectName(BackendContext_VK::VKFunctionTable& vkFunctionTable, VkDevice device, VkObjectType objectType, uint64_t object, char* name)
+void setVKObjectName(BackendContext_VK::VKFunctionTable &vkFunctionTable, VkDevice device, VkObjectType objectType, uint64_t object, char *name)
 {
-    VkDebugUtilsObjectNameInfoEXT s{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT, nullptr, objectType, object, name };
+    VkDebugUtilsObjectNameInfoEXT s{VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT, nullptr, objectType, object, name};
 
     if (vkFunctionTable.vkSetDebugUtilsObjectNameEXT)
         vkFunctionTable.vkSetDebugUtilsObjectNameEXT(device, &s);
@@ -307,45 +311,46 @@ void setVKObjectName(BackendContext_VK::VKFunctionTable& vkFunctionTable, VkDevi
 
 VkFormat getVKFormatFromSurfaceFormat(FfxSurfaceFormat fmt)
 {
-    switch (fmt) {
+    switch (fmt)
+    {
 
-    case(FFX_SURFACE_FORMAT_R32G32B32A32_TYPELESS):
+    case (FFX_SURFACE_FORMAT_R32G32B32A32_TYPELESS):
         return VK_FORMAT_R32G32B32A32_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT):
+    case (FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT):
         return VK_FORMAT_R32G32B32A32_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT):
+    case (FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT):
         return VK_FORMAT_R16G16B16A16_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R16G16B16A16_UNORM):
+    case (FFX_SURFACE_FORMAT_R16G16B16A16_UNORM):
         return VK_FORMAT_R16G16B16A16_UNORM;
-    case(FFX_SURFACE_FORMAT_R32G32_FLOAT):
+    case (FFX_SURFACE_FORMAT_R32G32_FLOAT):
         return VK_FORMAT_R32G32_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R32_UINT):
+    case (FFX_SURFACE_FORMAT_R32_UINT):
         return VK_FORMAT_R32_UINT;
-    case(FFX_SURFACE_FORMAT_R8G8B8A8_TYPELESS):
+    case (FFX_SURFACE_FORMAT_R8G8B8A8_TYPELESS):
         return VK_FORMAT_R8G8B8A8_UNORM;
-    case(FFX_SURFACE_FORMAT_R8G8B8A8_UNORM):
+    case (FFX_SURFACE_FORMAT_R8G8B8A8_UNORM):
         return VK_FORMAT_R8G8B8A8_UNORM;
-    case(FFX_SURFACE_FORMAT_R11G11B10_FLOAT):
+    case (FFX_SURFACE_FORMAT_R11G11B10_FLOAT):
         return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
-    case(FFX_SURFACE_FORMAT_R16G16_FLOAT):
+    case (FFX_SURFACE_FORMAT_R16G16_FLOAT):
         return VK_FORMAT_R16G16_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R16G16_UINT):
+    case (FFX_SURFACE_FORMAT_R16G16_UINT):
         return VK_FORMAT_R16G16_UINT;
-    case(FFX_SURFACE_FORMAT_R16_FLOAT):
+    case (FFX_SURFACE_FORMAT_R16_FLOAT):
         return VK_FORMAT_R16_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R16_UINT):
+    case (FFX_SURFACE_FORMAT_R16_UINT):
         return VK_FORMAT_R16_UINT;
-    case(FFX_SURFACE_FORMAT_R16_UNORM):
+    case (FFX_SURFACE_FORMAT_R16_UNORM):
         return VK_FORMAT_R16_UNORM;
-    case(FFX_SURFACE_FORMAT_R16_SNORM):
+    case (FFX_SURFACE_FORMAT_R16_SNORM):
         return VK_FORMAT_R16_SNORM;
-    case(FFX_SURFACE_FORMAT_R8_UNORM):
+    case (FFX_SURFACE_FORMAT_R8_UNORM):
         return VK_FORMAT_R8_UNORM;
-    case(FFX_SURFACE_FORMAT_R8G8_UNORM):
+    case (FFX_SURFACE_FORMAT_R8G8_UNORM):
         return VK_FORMAT_R8G8_UNORM;
-    case(FFX_SURFACE_FORMAT_R32_FLOAT):
+    case (FFX_SURFACE_FORMAT_R32_FLOAT):
         return VK_FORMAT_R32_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R8_UINT):
+    case (FFX_SURFACE_FORMAT_R8_UINT):
         return VK_FORMAT_R8_UINT;
     default:
         return VK_FORMAT_UNDEFINED;
@@ -355,8 +360,10 @@ VkFormat getVKFormatFromSurfaceFormat(FfxSurfaceFormat fmt)
 VkImageUsageFlags getVKImageUsageFlagsFromResourceUsage(FfxResourceUsage flags)
 {
     VkImageUsageFlags ret = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if (flags & FFX_RESOURCE_USAGE_RENDERTARGET) ret |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (flags & FFX_RESOURCE_USAGE_UAV) ret |= (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    if (flags & FFX_RESOURCE_USAGE_RENDERTARGET)
+        ret |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (flags & FFX_RESOURCE_USAGE_UAV)
+        ret |= (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     return ret;
 }
 
@@ -370,12 +377,13 @@ VkBufferUsageFlags getVKBufferUsageFlagsFromResourceUsage(FfxResourceUsage flags
 
 VkImageType getVKImageTypeFromResourceType(FfxResourceType type)
 {
-    switch (type) {
-    case(FFX_RESOURCE_TYPE_TEXTURE1D):
+    switch (type)
+    {
+    case (FFX_RESOURCE_TYPE_TEXTURE1D):
         return VK_IMAGE_TYPE_1D;
-    case(FFX_RESOURCE_TYPE_TEXTURE2D):
+    case (FFX_RESOURCE_TYPE_TEXTURE2D):
         return VK_IMAGE_TYPE_2D;
-    case(FFX_RESOURCE_TYPE_TEXTURE3D):
+    case (FFX_RESOURCE_TYPE_TEXTURE3D):
         return VK_IMAGE_TYPE_3D;
     default:
         return VK_IMAGE_TYPE_MAX_ENUM;
@@ -384,13 +392,14 @@ VkImageType getVKImageTypeFromResourceType(FfxResourceType type)
 
 VkImageLayout getVKImageLayoutFromResourceState(FfxResourceStates state)
 {
-    switch (state) {
+    switch (state)
+    {
 
-    case(FFX_RESOURCE_STATE_GENERIC_READ):
+    case (FFX_RESOURCE_STATE_GENERIC_READ):
         return VK_IMAGE_LAYOUT_GENERAL;
-    case(FFX_RESOURCE_STATE_UNORDERED_ACCESS):
+    case (FFX_RESOURCE_STATE_UNORDERED_ACCESS):
         return VK_IMAGE_LAYOUT_GENERAL;
-    case(FFX_RESOURCE_STATE_COMPUTE_READ):
+    case (FFX_RESOURCE_STATE_COMPUTE_READ):
         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     case FFX_RESOURCE_STATE_COPY_SRC:
         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -403,11 +412,12 @@ VkImageLayout getVKImageLayoutFromResourceState(FfxResourceStates state)
 
 VkPipelineStageFlags getVKPipelineStageFlagsFromResourceState(FfxResourceStates state)
 {
-    switch (state) {
+    switch (state)
+    {
 
-    case(FFX_RESOURCE_STATE_GENERIC_READ):
-    case(FFX_RESOURCE_STATE_UNORDERED_ACCESS):
-    case(FFX_RESOURCE_STATE_COMPUTE_READ):
+    case (FFX_RESOURCE_STATE_GENERIC_READ):
+    case (FFX_RESOURCE_STATE_UNORDERED_ACCESS):
+    case (FFX_RESOURCE_STATE_COMPUTE_READ):
         return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     case FFX_RESOURCE_STATE_COPY_SRC:
     case FFX_RESOURCE_STATE_COPY_DEST:
@@ -419,13 +429,14 @@ VkPipelineStageFlags getVKPipelineStageFlagsFromResourceState(FfxResourceStates 
 
 VkAccessFlags getVKAccessFlagsFromResourceState(FfxResourceStates state)
 {
-    switch (state) {
+    switch (state)
+    {
 
-    case(FFX_RESOURCE_STATE_GENERIC_READ):
+    case (FFX_RESOURCE_STATE_GENERIC_READ):
         return VK_ACCESS_SHADER_READ_BIT;
-    case(FFX_RESOURCE_STATE_UNORDERED_ACCESS):
+    case (FFX_RESOURCE_STATE_UNORDERED_ACCESS):
         return VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-    case(FFX_RESOURCE_STATE_COMPUTE_READ):
+    case (FFX_RESOURCE_STATE_COMPUTE_READ):
         return VK_ACCESS_SHADER_READ_BIT;
     case FFX_RESOURCE_STATE_COPY_SRC:
         return VK_ACCESS_TRANSFER_READ_BIT;
@@ -438,46 +449,47 @@ VkAccessFlags getVKAccessFlagsFromResourceState(FfxResourceStates state)
 
 FfxSurfaceFormat ffxGetSurfaceFormatVK(VkFormat fmt)
 {
-    switch (fmt) {
+    switch (fmt)
+    {
 
-    case(VK_FORMAT_R32G32B32A32_SFLOAT):
+    case (VK_FORMAT_R32G32B32A32_SFLOAT):
         return FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT;
-    case(VK_FORMAT_R16G16B16A16_SFLOAT):
+    case (VK_FORMAT_R16G16B16A16_SFLOAT):
         return FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
-    case(VK_FORMAT_R16G16B16A16_UNORM):
+    case (VK_FORMAT_R16G16B16A16_UNORM):
         return FFX_SURFACE_FORMAT_R16G16B16A16_UNORM;
-    case(VK_FORMAT_R32G32_SFLOAT):
+    case (VK_FORMAT_R32G32_SFLOAT):
         return FFX_SURFACE_FORMAT_R32G32_FLOAT;
-    case(VK_FORMAT_R32_UINT):
+    case (VK_FORMAT_R32_UINT):
         return FFX_SURFACE_FORMAT_R32_UINT;
-    case(VK_FORMAT_R8G8B8A8_UNORM):
+    case (VK_FORMAT_R8G8B8A8_UNORM):
         return FFX_SURFACE_FORMAT_R8G8B8A8_UNORM;
-    case(VK_FORMAT_B10G11R11_UFLOAT_PACK32):
+    case (VK_FORMAT_B10G11R11_UFLOAT_PACK32):
         return FFX_SURFACE_FORMAT_R11G11B10_FLOAT;
-    case(VK_FORMAT_R16G16_SFLOAT):
+    case (VK_FORMAT_R16G16_SFLOAT):
         return FFX_SURFACE_FORMAT_R16G16_FLOAT;
-    case(VK_FORMAT_R16G16_UINT):
+    case (VK_FORMAT_R16G16_UINT):
         return FFX_SURFACE_FORMAT_R16G16_UINT;
-    case(VK_FORMAT_R16_SFLOAT):
+    case (VK_FORMAT_R16_SFLOAT):
         return FFX_SURFACE_FORMAT_R16_FLOAT;
-    case(VK_FORMAT_R16_UINT):
+    case (VK_FORMAT_R16_UINT):
         return FFX_SURFACE_FORMAT_R16_UINT;
-    case(VK_FORMAT_R16_UNORM):
+    case (VK_FORMAT_R16_UNORM):
         return FFX_SURFACE_FORMAT_R16_UNORM;
-    case(VK_FORMAT_R16_SNORM):
+    case (VK_FORMAT_R16_SNORM):
         return FFX_SURFACE_FORMAT_R16_SNORM;
-    case(VK_FORMAT_R8_UNORM):
+    case (VK_FORMAT_R8_UNORM):
         return FFX_SURFACE_FORMAT_R8_UNORM;
-    case(VK_FORMAT_R32_SFLOAT):
+    case (VK_FORMAT_R32_SFLOAT):
         return FFX_SURFACE_FORMAT_R32_FLOAT;
-    case(VK_FORMAT_R8_UINT):
+    case (VK_FORMAT_R8_UINT):
         return FFX_SURFACE_FORMAT_R8_UINT;
     default:
         return FFX_SURFACE_FORMAT_UNKNOWN;
     }
 }
 
-uint32_t findMemoryTypeIndex(BackendContext_VK* backendContext, VkMemoryRequirements memRequirements, VkMemoryPropertyFlags requestedProperties, VkMemoryPropertyFlags& outProperties)
+uint32_t findMemoryTypeIndex(BackendContext_VK *backendContext, VkMemoryRequirements memRequirements, VkMemoryPropertyFlags requestedProperties, VkMemoryPropertyFlags &outProperties)
 {
     FFX_ASSERT(NULL != backendContext);
 
@@ -486,8 +498,10 @@ uint32_t findMemoryTypeIndex(BackendContext_VK* backendContext, VkMemoryRequirem
 
     uint32_t bestCandidate = UINT32_MAX;
 
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & requestedProperties)) {
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+    {
+        if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & requestedProperties))
+        {
 
             // if just device-local memory is requested, make sure this is the invisible heap to prevent over-subscribing the local heap
             if (requestedProperties == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
@@ -505,19 +519,19 @@ uint32_t findMemoryTypeIndex(BackendContext_VK* backendContext, VkMemoryRequirem
     return bestCandidate;
 }
 
-VkDescriptorBufferInfo accquireDynamicUBO(BackendContext_VK* backendContext, uint32_t size, void* pData)
+VkDescriptorBufferInfo accquireDynamicUBO(BackendContext_VK *backendContext, uint32_t size, void *pData)
 {
     // the ubo ring buffer is pre-populated with VkBuffer objects of 256-bytes to prevent creating buffers at runtime
     FFX_ASSERT(size <= 256);
 
-    BackendContext_VK::UniformBuffer& ubo = backendContext->uboRingBuffer[backendContext->uboRingBufferIndex];
+    BackendContext_VK::UniformBuffer &ubo = backendContext->uboRingBuffer[backendContext->uboRingBufferIndex];
 
     VkDescriptorBufferInfo bufferInfo = {};
 
     bufferInfo.buffer = ubo.bufferResource;
     bufferInfo.offset = 0;
     bufferInfo.range = size;
-    
+
     if (pData)
     {
         memcpy(ubo.pData, pData, size);
@@ -545,7 +559,7 @@ VkDescriptorBufferInfo accquireDynamicUBO(BackendContext_VK* backendContext, uin
     return bufferInfo;
 }
 
-static uint32_t getDefaultSubgroupSize(const BackendContext_VK* backendContext)
+static uint32_t getDefaultSubgroupSize(const BackendContext_VK *backendContext)
 {
     VkPhysicalDeviceVulkan11Properties vulkan11Properties = {};
     vulkan11Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES;
@@ -572,10 +586,10 @@ FfxCommandList ffxGetCommandListVK(VkCommandBuffer cmdBuf)
     return reinterpret_cast<FfxCommandList>(cmdBuf);
 }
 
-FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, VkImage imgVk, VkImageView imageView, uint32_t width, uint32_t height, VkFormat imgFormat, const wchar_t* name, FfxResourceStates state)
+FfxResource ffxGetTextureResourceVK(FfxFsr2Context *context, VkImage imgVk, VkImageView imageView, uint32_t width, uint32_t height, VkFormat imgFormat, const wchar_t *name, FfxResourceStates state)
 {
     FfxResource resource = {};
-    resource.resource = reinterpret_cast<void*>(imgVk);
+    resource.resource = reinterpret_cast<void *>(imgVk);
     resource.state = state;
     resource.descriptorData = reinterpret_cast<uint64_t>(imageView);
     resource.description.flags = FFX_RESOURCE_FLAGS_NONE;
@@ -605,18 +619,19 @@ FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, VkImage imgVk, VkIm
     }
 
 #ifdef _DEBUG
-    if (name) {
-        wcscpy_s(resource.name, name);
+    if (name)
+    {
+        wcscpy(resource.name, name);
     }
 #endif
 
     return resource;
 }
 
-FfxResource ffxGetBufferResourceVK(FfxFsr2Context* context, VkBuffer bufVk, uint32_t size, const wchar_t* name, FfxResourceStates state)
+FfxResource ffxGetBufferResourceVK(FfxFsr2Context *context, VkBuffer bufVk, uint32_t size, const wchar_t *name, FfxResourceStates state)
 {
     FfxResource resource = {};
-    resource.resource = reinterpret_cast<void*>(bufVk);
+    resource.resource = reinterpret_cast<void *>(bufVk);
     resource.state = state;
     resource.descriptorData = 0;
     resource.description.flags = FFX_RESOURCE_FLAGS_NONE;
@@ -629,57 +644,58 @@ FfxResource ffxGetBufferResourceVK(FfxFsr2Context* context, VkBuffer bufVk, uint
     resource.isDepth = false;
 
 #ifdef _DEBUG
-    if (name) {
-        wcscpy_s(resource.name, name);
+    if (name)
+    {
+        wcscpy(resource.name, name);
     }
 #endif
 
     return resource;
 }
 
-VkImage ffxGetVkImage(FfxFsr2Context* context, uint32_t resId)
+VkImage ffxGetVkImage(FfxFsr2Context *context, uint32_t resId)
 {
     FFX_ASSERT(NULL != context);
 
-    FfxFsr2Context_Private* contextPrivate = (FfxFsr2Context_Private*)(context);
-    BackendContext_VK* backendContext = (BackendContext_VK*)(contextPrivate->contextDescription.callbacks.scratchBuffer);
+    FfxFsr2Context_Private *contextPrivate = (FfxFsr2Context_Private *)(context);
+    BackendContext_VK *backendContext = (BackendContext_VK *)(contextPrivate->contextDescription.callbacks.scratchBuffer);
 
     int32_t internalIndex = contextPrivate->uavResources[resId].internalIndex;
 
     return (internalIndex == -1) ? nullptr : backendContext->resources[internalIndex].imageResource;
 }
 
-VkImageView ffxGetVkImageView(FfxFsr2Context* context, uint32_t resId)
+VkImageView ffxGetVkImageView(FfxFsr2Context *context, uint32_t resId)
 {
     FFX_ASSERT(NULL != context);
 
-    FfxFsr2Context_Private* contextPrivate = (FfxFsr2Context_Private*)(context);
-    BackendContext_VK* backendContext = (BackendContext_VK*)(contextPrivate->contextDescription.callbacks.scratchBuffer);
-    BackendContext_VK::Resource& internalRes = backendContext->resources[contextPrivate->uavResources[resId].internalIndex];
+    FfxFsr2Context_Private *contextPrivate = (FfxFsr2Context_Private *)(context);
+    BackendContext_VK *backendContext = (BackendContext_VK *)(contextPrivate->contextDescription.callbacks.scratchBuffer);
+    BackendContext_VK::Resource &internalRes = backendContext->resources[contextPrivate->uavResources[resId].internalIndex];
 
     return internalRes.allMipsImageView;
 }
 
-VkImageLayout ffxGetVkImageLayout(FfxFsr2Context* context, uint32_t resId)
+VkImageLayout ffxGetVkImageLayout(FfxFsr2Context *context, uint32_t resId)
 {
-    FfxFsr2Context_Private* contextPrivate = (FfxFsr2Context_Private*)(context);
-    BackendContext_VK* backendContext = (BackendContext_VK*)(contextPrivate->contextDescription.callbacks.scratchBuffer);
-    BackendContext_VK::Resource& internalRes = backendContext->resources[contextPrivate->uavResources[resId].internalIndex];
+    FfxFsr2Context_Private *contextPrivate = (FfxFsr2Context_Private *)(context);
+    BackendContext_VK *backendContext = (BackendContext_VK *)(contextPrivate->contextDescription.callbacks.scratchBuffer);
+    BackendContext_VK::Resource &internalRes = backendContext->resources[contextPrivate->uavResources[resId].internalIndex];
 
     return getVKImageLayoutFromResourceState(internalRes.state);
 }
 
 FfxErrorCode RegisterResourceVK(
-    FfxFsr2Interface* backendInterface,
-    const FfxResource* inFfxResource,
-    FfxResourceInternal* outFfxResourceInternal
-)
+    FfxFsr2Interface *backendInterface,
+    const FfxResource *inFfxResource,
+    FfxResourceInternal *outFfxResourceInternal)
 {
     FFX_ASSERT(NULL != backendInterface);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)(backendInterface->scratchBuffer);
+    BackendContext_VK *backendContext = (BackendContext_VK *)(backendInterface->scratchBuffer);
 
-    if (inFfxResource->resource == nullptr) {
+    if (inFfxResource->resource == nullptr)
+    {
 
         outFfxResourceInternal->internalIndex = FFX_FSR2_RESOURCE_IDENTIFIER_NULL;
         return FFX_OK;
@@ -688,7 +704,7 @@ FfxErrorCode RegisterResourceVK(
     FFX_ASSERT(backendContext->nextDynamicResource > backendContext->nextStaticResource);
     outFfxResourceInternal->internalIndex = backendContext->nextDynamicResource--;
 
-    BackendContext_VK::Resource* backendResource = &backendContext->resources[outFfxResourceInternal->internalIndex];
+    BackendContext_VK::Resource *backendResource = &backendContext->resources[outFfxResourceInternal->internalIndex];
 
     backendResource->resourceDescription = inFfxResource->description;
     backendResource->state = inFfxResource->state;
@@ -697,7 +713,8 @@ FfxErrorCode RegisterResourceVK(
 #ifdef _DEBUG
     size_t retval = 0;
     wcstombs_s(&retval, backendResource->resourceName, sizeof(backendResource->resourceName), inFfxResource->name, sizeof(backendResource->resourceName));
-    if (retval >= 64) backendResource->resourceName[63] = '\0';
+    if (retval >= 64)
+        backendResource->resourceName[63] = '\0';
 #endif
 
     if (inFfxResource->description.type == FFX_RESOURCE_TYPE_BUFFER)
@@ -712,10 +729,12 @@ FfxErrorCode RegisterResourceVK(
         VkImageView imageView = reinterpret_cast<VkImageView>(inFfxResource->descriptorData);
 
         backendResource->imageResource = image;
- 
-        if (image) {
 
-            if (imageView) {
+        if (image)
+        {
+
+            if (imageView)
+            {
 
                 if (inFfxResource->isDepth)
                     backendResource->aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -727,25 +746,25 @@ FfxErrorCode RegisterResourceVK(
             }
         }
     }
-    
+
     return FFX_OK;
 }
 
 // dispose dynamic resources: This should be called at the end of the frame
-FfxErrorCode UnregisterResourcesVK(FfxFsr2Interface* backendInterface)
+FfxErrorCode UnregisterResourcesVK(FfxFsr2Interface *backendInterface)
 {
     FFX_ASSERT(NULL != backendInterface);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)(backendInterface->scratchBuffer);
+    BackendContext_VK *backendContext = (BackendContext_VK *)(backendInterface->scratchBuffer);
 
     backendContext->nextDynamicResource = FSR2_MAX_RESOURCE_COUNT - 1;
 
     return FFX_OK;
 }
 
-FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDeviceCapabilities* deviceCapabilities, FfxDevice device)
+FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface *backendInterface, FfxDeviceCapabilities *deviceCapabilities, FfxDevice device)
 {
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
     const uint32_t defaultSubgroupSize = getDefaultSubgroupSize(backendContext);
 
@@ -796,7 +815,7 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
         }
         if (strcmp(backendContext->extensionProperties[i].extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) == 0)
         {
-            // check for ray tracing support 
+            // check for ray tracing support
             VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
             accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 
@@ -813,15 +832,15 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
     return FFX_OK;
 }
 
-FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevice device)
+FfxErrorCode CreateBackendContextVK(FfxFsr2Interface *backendInterface, FfxDevice device)
 {
     FFX_ASSERT(NULL != backendInterface);
 
     VkDevice vkDevice = reinterpret_cast<VkDevice>(device);
 
     // set up some internal resources we need (space for resource views and constant buffers)
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
-    backendContext->extensionProperties = (VkExtensionProperties*)(backendContext + 1);
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
+    backendContext->extensionProperties = (VkExtensionProperties *)(backendContext + 1);
 
     // make sure the extra parameters were already passed in
     FFX_ASSERT(backendContext->physicalDevice != NULL);
@@ -834,7 +853,8 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
         backendContext->vkFunctionTable.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
 #endif
 
-    if (vkDevice != NULL) {
+    if (vkDevice != NULL)
+    {
         backendContext->device = vkDevice;
     }
 
@@ -844,7 +864,7 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     // load vulkan functions
     loadVKFunctions(backendContext, backendContext->vkFunctionTable.vkGetDeviceProcAddr, backendContext->vkFunctionTable.vkGetInstanceProcAddr);
 
-    // enumerate all the device extensions 
+    // enumerate all the device extensions
     backendContext->numDeviceExtensions = 0;
     backendContext->vkFunctionTable.vkEnumerateDeviceExtensionProperties(backendContext->physicalDevice, nullptr, &backendContext->numDeviceExtensions, nullptr);
     backendContext->vkFunctionTable.vkEnumerateDeviceExtensionProperties(backendContext->physicalDevice, nullptr, &backendContext->numDeviceExtensions, backendContext->extensionProperties);
@@ -853,10 +873,10 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
 
     VkDescriptorPoolSize poolSizes[] = {
-        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, FSR2_MAX_IMAGE_VIEWS * FSR2_MAX_BUFFERED_DESCRIPTORS },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, FSR2_MAX_IMAGE_VIEWS * FSR2_MAX_BUFFERED_DESCRIPTORS },
-        { VK_DESCRIPTOR_TYPE_SAMPLER, FSR2_MAX_SAMPLERS * FSR2_MAX_BUFFERED_DESCRIPTORS  },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, FSR2_MAX_UNIFORM_BUFFERS * FSR2_MAX_BUFFERED_DESCRIPTORS },
+        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, FSR2_MAX_IMAGE_VIEWS * FSR2_MAX_BUFFERED_DESCRIPTORS},
+        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, FSR2_MAX_IMAGE_VIEWS * FSR2_MAX_BUFFERED_DESCRIPTORS},
+        {VK_DESCRIPTOR_TYPE_SAMPLER, FSR2_MAX_SAMPLERS * FSR2_MAX_BUFFERED_DESCRIPTORS},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, FSR2_MAX_UNIFORM_BUFFERS * FSR2_MAX_BUFFERED_DESCRIPTORS},
     };
 
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -864,7 +884,8 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     descriptorPoolCreateInfo.poolSizeCount = 4;
     descriptorPoolCreateInfo.pPoolSizes = poolSizes;
 
-    if (backendContext->vkFunctionTable.vkCreateDescriptorPool(backendContext->device, &descriptorPoolCreateInfo, nullptr, &backendContext->descPool) != VK_SUCCESS) {
+    if (backendContext->vkFunctionTable.vkCreateDescriptorPool(backendContext->device, &descriptorPoolCreateInfo, nullptr, &backendContext->descPool) != VK_SUCCESS)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
@@ -881,14 +902,16 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     samplerCreateInfo.maxLod = 1000;
     samplerCreateInfo.maxAnisotropy = 1.0f;
 
-    if (backendContext->vkFunctionTable.vkCreateSampler(backendContext->device, &samplerCreateInfo, nullptr, &backendContext->pointSampler) != VK_SUCCESS) {
+    if (backendContext->vkFunctionTable.vkCreateSampler(backendContext->device, &samplerCreateInfo, nullptr, &backendContext->pointSampler) != VK_SUCCESS)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
     samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
     samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
 
-    if (backendContext->vkFunctionTable.vkCreateSampler(backendContext->device, &samplerCreateInfo, nullptr, &backendContext->linearSampler) != VK_SUCCESS) {
+    if (backendContext->vkFunctionTable.vkCreateSampler(backendContext->device, &samplerCreateInfo, nullptr, &backendContext->linearSampler) != VK_SUCCESS)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
@@ -896,15 +919,16 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
 
         VkDescriptorSetLayoutBinding bindings[] = {
-            { 0, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT, &backendContext->pointSampler },
-            { 1, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT, &backendContext->linearSampler },
+            {0, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT, &backendContext->pointSampler},
+            {1, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT, &backendContext->linearSampler},
         };
 
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         descriptorSetLayoutCreateInfo.bindingCount = 2;
         descriptorSetLayoutCreateInfo.pBindings = bindings;
 
-        if (backendContext->vkFunctionTable.vkCreateDescriptorSetLayout(backendContext->device, &descriptorSetLayoutCreateInfo, NULL, &backendContext->samplerDescriptorSetLayout) != VK_SUCCESS) {
+        if (backendContext->vkFunctionTable.vkCreateDescriptorSetLayout(backendContext->device, &descriptorSetLayoutCreateInfo, NULL, &backendContext->samplerDescriptorSetLayout) != VK_SUCCESS)
+        {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
     }
@@ -924,7 +948,7 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     {
         for (uint32_t i = 0; i < FSR2_UBO_RING_BUFFER_SIZE; i++)
         {
-            BackendContext_VK::UniformBuffer& ubo = backendContext->uboRingBuffer[i];
+            BackendContext_VK::UniformBuffer &ubo = backendContext->uboRingBuffer[i];
 
             VkBufferCreateInfo bufferInfo = {};
 
@@ -933,7 +957,8 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
             bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-            if (backendContext->vkFunctionTable.vkCreateBuffer(backendContext->device, &bufferInfo, NULL, &ubo.bufferResource) != VK_SUCCESS) {
+            if (backendContext->vkFunctionTable.vkCreateBuffer(backendContext->device, &bufferInfo, NULL, &ubo.bufferResource) != VK_SUCCESS)
+            {
                 return FFX_ERROR_BACKEND_API_ERROR;
             }
         }
@@ -949,38 +974,43 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
         allocInfo.allocationSize = FSR2_UBO_MEMORY_BLOCK_SIZE;
         allocInfo.memoryTypeIndex = findMemoryTypeIndex(backendContext, memRequirements, requiredMemoryProperties, backendContext->uboMemoryProperties);
 
-        if (allocInfo.memoryTypeIndex == UINT32_MAX) {
+        if (allocInfo.memoryTypeIndex == UINT32_MAX)
+        {
             requiredMemoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
             allocInfo.memoryTypeIndex = findMemoryTypeIndex(backendContext, memRequirements, requiredMemoryProperties, backendContext->uboMemoryProperties);
 
-            if (allocInfo.memoryTypeIndex == UINT32_MAX) {
+            if (allocInfo.memoryTypeIndex == UINT32_MAX)
+            {
                 return FFX_ERROR_BACKEND_API_ERROR;
             }
         }
 
         VkResult result = backendContext->vkFunctionTable.vkAllocateMemory(backendContext->device, &allocInfo, nullptr, &backendContext->uboMemory);
 
-        if (result != VK_SUCCESS) {
-            switch (result) {
-            case(VK_ERROR_OUT_OF_HOST_MEMORY):
-            case(VK_ERROR_OUT_OF_DEVICE_MEMORY):
+        if (result != VK_SUCCESS)
+        {
+            switch (result)
+            {
+            case (VK_ERROR_OUT_OF_HOST_MEMORY):
+            case (VK_ERROR_OUT_OF_DEVICE_MEMORY):
                 return FFX_ERROR_OUT_OF_MEMORY;
             default:
                 return FFX_ERROR_BACKEND_API_ERROR;
             }
         }
 
-        // map the memory block 
-        uint8_t* pData = nullptr;
+        // map the memory block
+        uint8_t *pData = nullptr;
 
-        if (backendContext->vkFunctionTable.vkMapMemory(backendContext->device, backendContext->uboMemory, 0, FSR2_UBO_MEMORY_BLOCK_SIZE, 0, reinterpret_cast<void**>(&pData)) != VK_SUCCESS) {
+        if (backendContext->vkFunctionTable.vkMapMemory(backendContext->device, backendContext->uboMemory, 0, FSR2_UBO_MEMORY_BLOCK_SIZE, 0, reinterpret_cast<void **>(&pData)) != VK_SUCCESS)
+        {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
 
         // bind each 256-byte block to the ubos
         for (uint32_t i = 0; i < FSR2_UBO_RING_BUFFER_SIZE; i++)
         {
-            BackendContext_VK::UniformBuffer& ubo = backendContext->uboRingBuffer[i];
+            BackendContext_VK::UniformBuffer &ubo = backendContext->uboRingBuffer[i];
 
             // get the buffer memory requirements for each buffer object to silence validation errors
             VkMemoryRequirements memRequirements = {};
@@ -988,7 +1018,8 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
 
             ubo.pData = pData + 256 * i;
 
-            if (backendContext->vkFunctionTable.vkBindBufferMemory(backendContext->device, ubo.bufferResource, backendContext->uboMemory, 256 * i) != VK_SUCCESS) {
+            if (backendContext->vkFunctionTable.vkBindBufferMemory(backendContext->device, ubo.bufferResource, backendContext->uboMemory, 256 * i) != VK_SUCCESS)
+            {
                 return FFX_ERROR_BACKEND_API_ERROR;
             }
         }
@@ -1006,18 +1037,18 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     return FFX_OK;
 }
 
-FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface* backendInterface)
+FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface *backendInterface)
 {
     FFX_ASSERT(NULL != backendInterface);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
     for (uint32_t i = 0; i < backendContext->stagingResourceCount; i++)
         DestroyResourceVK(backendInterface, backendContext->stagingResources[i]);
 
     for (uint32_t i = 0; i < FSR2_UBO_RING_BUFFER_SIZE; i++)
     {
-        BackendContext_VK::UniformBuffer& ubo = backendContext->uboRingBuffer[i];
+        BackendContext_VK::UniformBuffer &ubo = backendContext->uboRingBuffer[i];
 
         backendContext->vkFunctionTable.vkDestroyBuffer(backendContext->device, ubo.bufferResource, nullptr);
 
@@ -1041,7 +1072,8 @@ FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface* backendInterface)
     backendContext->pointSampler = nullptr;
     backendContext->linearSampler = nullptr;
 
-    if (backendContext->device != nullptr) {
+    if (backendContext->device != nullptr)
+    {
 
         backendContext->device = nullptr;
     }
@@ -1051,20 +1083,20 @@ FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface* backendInterface)
 
 // create a internal resource that will stay alive until effect gets shut down
 FfxErrorCode CreateResourceVK(
-    FfxFsr2Interface* backendInterface, 
-    const FfxCreateResourceDescription* createResourceDescription,
-    FfxResourceInternal* outResource)
+    FfxFsr2Interface *backendInterface,
+    const FfxCreateResourceDescription *createResourceDescription,
+    FfxResourceInternal *outResource)
 {
     FFX_ASSERT(NULL != backendInterface);
     FFX_ASSERT(NULL != createResourceDescription);
     FFX_ASSERT(NULL != outResource);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
     VkDevice vkDevice = reinterpret_cast<VkDevice>(backendContext->device);
 
     FFX_ASSERT(backendContext->nextStaticResource + 1 < backendContext->nextDynamicResource);
     outResource->internalIndex = backendContext->nextStaticResource++;
-    BackendContext_VK::Resource* res = &backendContext->resources[outResource->internalIndex];
+    BackendContext_VK::Resource *res = &backendContext->resources[outResource->internalIndex];
     res->resourceDescription = createResourceDescription->resourceDescription;
     res->resourceDescription.mipCount = createResourceDescription->resourceDescription.mipCount;
     res->undefined = true; // A flag to make sure the first barrier for this image resource always uses an src layout of undefined
@@ -1074,10 +1106,11 @@ FfxErrorCode CreateResourceVK(
 #ifdef _DEBUG
     size_t retval = 0;
     wcstombs_s(&retval, res->resourceName, sizeof(res->resourceName), createResourceDescription->name, sizeof(res->resourceName));
-    if (retval >= 64) res->resourceName[63] = '\0';
+    if (retval >= 64)
+        res->resourceName[63] = '\0';
 #endif
     VkMemoryRequirements memRequirements = {};
-    
+
     switch (createResourceDescription->resourceDescription.type)
     {
     case FFX_RESOURCE_TYPE_BUFFER:
@@ -1090,8 +1123,9 @@ FfxErrorCode CreateResourceVK(
 
         if (createResourceDescription->initData)
             bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    
-        if (backendContext->vkFunctionTable.vkCreateBuffer(backendContext->device, &bufferInfo, NULL, &res->bufferResource) != VK_SUCCESS) {
+
+        if (backendContext->vkFunctionTable.vkCreateBuffer(backendContext->device, &bufferInfo, NULL, &res->bufferResource) != VK_SUCCESS)
+        {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
 
@@ -1121,7 +1155,8 @@ FfxErrorCode CreateResourceVK(
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        if (backendContext->vkFunctionTable.vkCreateImage(backendContext->device, &imageInfo, nullptr, &res->imageResource) != VK_SUCCESS) {
+        if (backendContext->vkFunctionTable.vkCreateImage(backendContext->device, &imageInfo, nullptr, &res->imageResource) != VK_SUCCESS)
+        {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
 
@@ -1138,10 +1173,10 @@ FfxErrorCode CreateResourceVK(
     }
 
     VkMemoryPropertyFlags requiredMemoryProperties;
-    
+
     if (createResourceDescription->heapType == FFX_HEAP_TYPE_UPLOAD)
         requiredMemoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    else 
+    else
         requiredMemoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     VkMemoryAllocateInfo allocInfo{};
@@ -1149,16 +1184,19 @@ FfxErrorCode CreateResourceVK(
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryTypeIndex(backendContext, memRequirements, requiredMemoryProperties, res->memoryProperties);
 
-    if (allocInfo.memoryTypeIndex == UINT32_MAX) {
+    if (allocInfo.memoryTypeIndex == UINT32_MAX)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
     VkResult result = backendContext->vkFunctionTable.vkAllocateMemory(backendContext->device, &allocInfo, nullptr, &res->deviceMemory);
 
-    if (result != VK_SUCCESS) {
-        switch (result) {
-        case(VK_ERROR_OUT_OF_HOST_MEMORY):
-        case(VK_ERROR_OUT_OF_DEVICE_MEMORY):
+    if (result != VK_SUCCESS)
+    {
+        switch (result)
+        {
+        case (VK_ERROR_OUT_OF_HOST_MEMORY):
+        case (VK_ERROR_OUT_OF_DEVICE_MEMORY):
             return FFX_ERROR_OUT_OF_MEMORY;
         default:
             return FFX_ERROR_BACKEND_API_ERROR;
@@ -1169,7 +1207,8 @@ FfxErrorCode CreateResourceVK(
     {
     case FFX_RESOURCE_TYPE_BUFFER:
     {
-        if (backendContext->vkFunctionTable.vkBindBufferMemory(backendContext->device, res->bufferResource, res->deviceMemory, 0) != VK_SUCCESS) {
+        if (backendContext->vkFunctionTable.vkBindBufferMemory(backendContext->device, res->bufferResource, res->deviceMemory, 0) != VK_SUCCESS)
+        {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
         break;
@@ -1178,7 +1217,8 @@ FfxErrorCode CreateResourceVK(
     case FFX_RESOURCE_TYPE_TEXTURE2D:
     case FFX_RESOURCE_TYPE_TEXTURE3D:
     {
-        if (backendContext->vkFunctionTable.vkBindImageMemory(backendContext->device, res->imageResource, res->deviceMemory, 0) != VK_SUCCESS) {
+        if (backendContext->vkFunctionTable.vkBindImageMemory(backendContext->device, res->imageResource, res->deviceMemory, 0) != VK_SUCCESS)
+        {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
 
@@ -1198,7 +1238,8 @@ FfxErrorCode CreateResourceVK(
         imageViewCreateInfo.subresourceRange.layerCount = 1;
 
         // create an image view containing all mip levels for use as an srv
-        if (backendContext->vkFunctionTable.vkCreateImageView(backendContext->device, &imageViewCreateInfo, NULL, &res->allMipsImageView) != VK_SUCCESS) {
+        if (backendContext->vkFunctionTable.vkCreateImageView(backendContext->device, &imageViewCreateInfo, NULL, &res->allMipsImageView) != VK_SUCCESS)
+        {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
 #ifdef _DEBUG
@@ -1210,7 +1251,8 @@ FfxErrorCode CreateResourceVK(
             imageViewCreateInfo.subresourceRange.levelCount = 1;
             imageViewCreateInfo.subresourceRange.baseMipLevel = mip;
 
-            if (backendContext->vkFunctionTable.vkCreateImageView(backendContext->device, &imageViewCreateInfo, NULL, &res->singleMipImageViews[mip]) != VK_SUCCESS) {
+            if (backendContext->vkFunctionTable.vkCreateImageView(backendContext->device, &imageViewCreateInfo, NULL, &res->singleMipImageViews[mip]) != VK_SUCCESS)
+            {
                 return FFX_ERROR_BACKEND_API_ERROR;
             }
 #ifdef _DEBUG
@@ -1227,9 +1269,10 @@ FfxErrorCode CreateResourceVK(
         // only allow copies directy into mapped memory for buffer resources since all texture resources are in optimal tiling
         if (createResourceDescription->heapType == FFX_HEAP_TYPE_UPLOAD && createResourceDescription->resourceDescription.type == FFX_RESOURCE_TYPE_BUFFER)
         {
-            void* data = NULL;
+            void *data = NULL;
 
-            if (backendContext->vkFunctionTable.vkMapMemory(backendContext->device, res->deviceMemory, 0, createResourceDescription->initDataSize, 0, &data) != VK_SUCCESS) {
+            if (backendContext->vkFunctionTable.vkMapMemory(backendContext->device, res->deviceMemory, 0, createResourceDescription->initDataSize, 0, &data) != VK_SUCCESS)
+            {
                 return FFX_ERROR_BACKEND_API_ERROR;
             }
 
@@ -1251,7 +1294,7 @@ FfxErrorCode CreateResourceVK(
         else
         {
             FfxResourceInternal copySrc;
-            FfxCreateResourceDescription uploadDesc = { *createResourceDescription };
+            FfxCreateResourceDescription uploadDesc = {*createResourceDescription};
             uploadDesc.heapType = FFX_HEAP_TYPE_UPLOAD;
             uploadDesc.resourceDescription.type = FFX_RESOURCE_TYPE_BUFFER;
             uploadDesc.resourceDescription.width = createResourceDescription->initDataSize;
@@ -1264,15 +1307,14 @@ FfxErrorCode CreateResourceVK(
 
             // setup the upload job
             FfxGpuJobDescription copyJob =
-            {
-                FFX_GPU_JOB_COPY
-            };
+                {
+                    FFX_GPU_JOB_COPY};
             copyJob.copyJobDescriptor.src = copySrc;
             copyJob.copyJobDescriptor.dst = *outResource;
 
             backendInterface->fpScheduleGpuJob(backendInterface, &copyJob);
 
-            // add to the list of staging resources to delete later 
+            // add to the list of staging resources to delete later
             uint32_t stagingResIdx = backendContext->stagingResourceCount++;
 
             FFX_ASSERT(backendContext->stagingResourceCount < FSR2_MAX_STAGING_RESOURCE_COUNT);
@@ -1284,11 +1326,11 @@ FfxErrorCode CreateResourceVK(
     return FFX_OK;
 }
 
-FfxResourceDescription GetResourceDescriptorVK(FfxFsr2Interface* backendInterface, FfxResourceInternal resource)
+FfxResourceDescription GetResourceDescriptorVK(FfxFsr2Interface *backendInterface, FfxResourceInternal resource)
 {
     FFX_ASSERT(NULL != backendInterface);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
     if (resource.internalIndex != -1)
     {
@@ -1302,14 +1344,14 @@ FfxResourceDescription GetResourceDescriptorVK(FfxFsr2Interface* backendInterfac
     }
 }
 
-FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pass, const FfxPipelineDescription* pipelineDescription, FfxPipelineState* outPipeline)
+FfxErrorCode CreatePipelineVK(FfxFsr2Interface *backendInterface, FfxFsr2Pass pass, const FfxPipelineDescription *pipelineDescription, FfxPipelineState *outPipeline)
 {
     FFX_ASSERT(NULL != backendInterface);
     FFX_ASSERT(NULL != pipelineDescription);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
-    // query device capabilities 
+    // query device capabilities
     FfxDeviceCapabilities deviceCapabilities;
 
     GetDeviceCapabilitiesVK(backendInterface, &deviceCapabilities, ffxGetDeviceVK(backendContext->device));
@@ -1368,28 +1410,28 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     for (uint32_t srvIndex = 0; srvIndex < outPipeline->srvCount; ++srvIndex)
     {
         outPipeline->srvResourceBindings[srvIndex].slotIndex = shaderBlob.boundSampledImageBindings[srvIndex];
-        wcscpy_s(outPipeline->srvResourceBindings[srvIndex].name, converter.from_bytes(shaderBlob.boundSampledImageNames[srvIndex]).c_str());
+        wcscpy(outPipeline->srvResourceBindings[srvIndex].name, converter.from_bytes(shaderBlob.boundSampledImageNames[srvIndex]).c_str());
     }
     for (uint32_t uavIndex = 0; uavIndex < outPipeline->uavCount; ++uavIndex)
     {
         outPipeline->uavResourceBindings[uavIndex].slotIndex = shaderBlob.boundStorageImageBindings[uavIndex];
-        wcscpy_s(outPipeline->uavResourceBindings[uavIndex].name, converter.from_bytes(shaderBlob.boundStorageImageNames[uavIndex]).c_str());
+        wcscpy(outPipeline->uavResourceBindings[uavIndex].name, converter.from_bytes(shaderBlob.boundStorageImageNames[uavIndex]).c_str());
     }
     for (uint32_t cbIndex = 0; cbIndex < outPipeline->constCount; ++cbIndex)
     {
         outPipeline->cbResourceBindings[cbIndex].slotIndex = shaderBlob.boundUniformBufferBindings[cbIndex];
-        wcscpy_s(outPipeline->cbResourceBindings[cbIndex].name, converter.from_bytes(shaderBlob.boundUniformBufferNames[cbIndex]).c_str());
+        wcscpy(outPipeline->cbResourceBindings[cbIndex].name, converter.from_bytes(shaderBlob.boundUniformBufferNames[cbIndex]).c_str());
     }
 
     // create descriptor set layout
     FFX_ASSERT(backendContext->allocatedPipelineLayoutCount < FFX_FSR2_PASS_COUNT);
-    BackendContext_VK::PipelineLayout& pipelineLayout = backendContext->pipelineLayouts[backendContext->allocatedPipelineLayoutCount++];
+    BackendContext_VK::PipelineLayout &pipelineLayout = backendContext->pipelineLayouts[backendContext->allocatedPipelineLayoutCount++];
     VkDescriptorSetLayoutBinding bindings[32];
     uint32_t bindingIndex = 0;
 
     for (uint32_t srvIndex = 0; srvIndex < outPipeline->srvCount; ++srvIndex)
     {
-        VkDescriptorSetLayoutBinding& binding = bindings[bindingIndex++];
+        VkDescriptorSetLayoutBinding &binding = bindings[bindingIndex++];
         binding.binding = outPipeline->srvResourceBindings[srvIndex].slotIndex;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         binding.descriptorCount = 1;
@@ -1399,7 +1441,7 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
 
     for (uint32_t uavIndex = 0; uavIndex < outPipeline->uavCount; ++uavIndex)
     {
-        VkDescriptorSetLayoutBinding& binding = bindings[bindingIndex++];
+        VkDescriptorSetLayoutBinding &binding = bindings[bindingIndex++];
         binding.binding = outPipeline->uavResourceBindings[uavIndex].slotIndex;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         binding.descriptorCount = 1;
@@ -1409,7 +1451,7 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
 
     for (uint32_t cbIndex = 0; cbIndex < outPipeline->constCount; ++cbIndex)
     {
-        VkDescriptorSetLayoutBinding& binding = bindings[bindingIndex++];
+        VkDescriptorSetLayoutBinding &binding = bindings[bindingIndex++];
         binding.binding = outPipeline->cbResourceBindings[cbIndex].slotIndex;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         binding.descriptorCount = 1;
@@ -1422,13 +1464,14 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     dsLayoutCreateInfo.bindingCount = bindingIndex;
     dsLayoutCreateInfo.pBindings = bindings;
 
-    if (backendContext->vkFunctionTable.vkCreateDescriptorSetLayout(backendContext->device, &dsLayoutCreateInfo, nullptr, &pipelineLayout.descriptorSetLayout) != VK_SUCCESS) {
+    if (backendContext->vkFunctionTable.vkCreateDescriptorSetLayout(backendContext->device, &dsLayoutCreateInfo, nullptr, &pipelineLayout.descriptorSetLayout) != VK_SUCCESS)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
     // allocate descriptor sets
     pipelineLayout.descriptorSetIndex = 0;
-    
+
     for (uint32_t i = 0; i < FSR2_MAX_QUEUED_FRAMES; i++)
     {
         VkDescriptorSetAllocateInfo allocateInfo = {};
@@ -1441,26 +1484,28 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     }
 
     // create pipeline layout
-    VkDescriptorSetLayout dsLayouts[] = { backendContext->samplerDescriptorSetLayout, pipelineLayout.descriptorSetLayout };
+    VkDescriptorSetLayout dsLayouts[] = {backendContext->samplerDescriptorSetLayout, pipelineLayout.descriptorSetLayout};
 
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutCreateInfo.setLayoutCount = 2;
     pipelineLayoutCreateInfo.pSetLayouts = dsLayouts;
 
-    if (backendContext->vkFunctionTable.vkCreatePipelineLayout(backendContext->device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout.pipelineLayout) != VK_SUCCESS) {
+    if (backendContext->vkFunctionTable.vkCreatePipelineLayout(backendContext->device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout.pipelineLayout) != VK_SUCCESS)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
-    // create the shader module 
+    // create the shader module
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shaderModuleCreateInfo.pCode = (uint32_t*)shaderBlob.data;
+    shaderModuleCreateInfo.pCode = (uint32_t *)shaderBlob.data;
     shaderModuleCreateInfo.codeSize = shaderBlob.size;
 
     VkShaderModule shaderModule = nullptr;
 
-    if (backendContext->vkFunctionTable.vkCreateShaderModule(backendContext->device, &shaderModuleCreateInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+    if (backendContext->vkFunctionTable.vkCreateShaderModule(backendContext->device, &shaderModuleCreateInfo, nullptr, &shaderModule) != VK_SUCCESS)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
@@ -1474,7 +1519,8 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     // set wave64 if possible
     VkPipelineShaderStageRequiredSubgroupSizeCreateInfo subgroupSizeCreateInfo = {};
 
-    if (canForceWave64) {
+    if (canForceWave64)
+    {
 
         subgroupSizeCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO;
         subgroupSizeCreateInfo.requiredSubgroupSize = 64;
@@ -1489,7 +1535,8 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     pipelineCreateInfo.layout = pipelineLayout.pipelineLayout;
 
     VkPipeline computePipeline = nullptr;
-    if (backendContext->vkFunctionTable.vkCreateComputePipelines(backendContext->device, nullptr, 1, &pipelineCreateInfo, nullptr, &computePipeline) != VK_SUCCESS) {
+    if (backendContext->vkFunctionTable.vkCreateComputePipelines(backendContext->device, nullptr, 1, &pipelineCreateInfo, nullptr, &computePipeline) != VK_SUCCESS)
+    {
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
@@ -1501,21 +1548,22 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     return FFX_OK;
 }
 
-FfxErrorCode ScheduleGpuJobVK(FfxFsr2Interface* backendInterface, const FfxGpuJobDescription* job)
+FfxErrorCode ScheduleGpuJobVK(FfxFsr2Interface *backendInterface, const FfxGpuJobDescription *job)
 {
     FFX_ASSERT(NULL != backendInterface);
     FFX_ASSERT(NULL != job);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
     FFX_ASSERT(backendContext->gpuJobCount < FSR2_MAX_GPU_JOBS);
 
     backendContext->gpuJobs[backendContext->gpuJobCount] = *job;
 
-    if (job->jobType == FFX_GPU_JOB_COMPUTE) {
+    if (job->jobType == FFX_GPU_JOB_COMPUTE)
+    {
 
         // needs to copy SRVs and UAVs in case they are on the stack only
-        FfxComputeJobDescription* computeJob = &backendContext->gpuJobs[backendContext->gpuJobCount].computeJobDescriptor;
+        FfxComputeJobDescription *computeJob = &backendContext->gpuJobs[backendContext->gpuJobCount].computeJobDescriptor;
         const uint32_t numConstBuffers = job->computeJobDescriptor.pipeline.constCount;
         for (uint32_t currentRootConstantIndex = 0; currentRootConstantIndex < numConstBuffers; ++currentRootConstantIndex)
         {
@@ -1529,19 +1577,19 @@ FfxErrorCode ScheduleGpuJobVK(FfxFsr2Interface* backendInterface, const FfxGpuJo
     return FFX_OK;
 }
 
-void addBarrier(BackendContext_VK* backendContext, FfxResourceInternal* resource, FfxResourceStates newState)
+void addBarrier(BackendContext_VK *backendContext, FfxResourceInternal *resource, FfxResourceStates newState)
 {
     FFX_ASSERT(NULL != backendContext);
     FFX_ASSERT(NULL != resource);
 
-    BackendContext_VK::Resource& ffxResource = backendContext->resources[resource->internalIndex];
+    BackendContext_VK::Resource &ffxResource = backendContext->resources[resource->internalIndex];
 
     if (ffxResource.resourceDescription.type == FFX_RESOURCE_TYPE_BUFFER)
     {
         VkBuffer vkResource = ffxResource.bufferResource;
-        VkBufferMemoryBarrier* barrier = &backendContext->bufferMemoryBarriers[backendContext->scheduledBufferBarrierCount];
+        VkBufferMemoryBarrier *barrier = &backendContext->bufferMemoryBarriers[backendContext->scheduledBufferBarrierCount];
 
-        FfxResourceStates& curState = backendContext->resources[resource->internalIndex].state;
+        FfxResourceStates &curState = backendContext->resources[resource->internalIndex].state;
 
         barrier->sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         barrier->pNext = nullptr;
@@ -1563,9 +1611,9 @@ void addBarrier(BackendContext_VK* backendContext, FfxResourceInternal* resource
     else
     {
         VkImage vkResource = ffxResource.imageResource;
-        VkImageMemoryBarrier* barrier = &backendContext->imageMemoryBarriers[backendContext->scheduledImageBarrierCount];
+        VkImageMemoryBarrier *barrier = &backendContext->imageMemoryBarriers[backendContext->scheduledImageBarrierCount];
 
-        FfxResourceStates& curState = backendContext->resources[resource->internalIndex].state;
+        FfxResourceStates &curState = backendContext->resources[resource->internalIndex].state;
 
         VkImageSubresourceRange range;
         range.aspectMask = backendContext->resources[resource->internalIndex].aspectFlags;
@@ -1597,7 +1645,7 @@ void addBarrier(BackendContext_VK* backendContext, FfxResourceInternal* resource
         ffxResource.undefined = false;
 }
 
-void flushBarriers(BackendContext_VK* backendContext, VkCommandBuffer vkCommandBuffer)
+void flushBarriers(BackendContext_VK *backendContext, VkCommandBuffer vkCommandBuffer)
 {
     FFX_ASSERT(NULL != backendContext);
     FFX_ASSERT(NULL != vkCommandBuffer);
@@ -1612,16 +1660,16 @@ void flushBarriers(BackendContext_VK* backendContext, VkCommandBuffer vkCommandB
     }
 }
 
-static FfxErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, FfxGpuJobDescription* job, VkCommandBuffer vkCommandBuffer)
+static FfxErrorCode executeGpuJobCompute(BackendContext_VK *backendContext, FfxGpuJobDescription *job, VkCommandBuffer vkCommandBuffer)
 {
-    uint32_t               imageInfoIndex = 0;
-    uint32_t               bufferInfoIndex = 0;
-    uint32_t               descriptorWriteIndex = 0;
-    VkDescriptorImageInfo  imageInfos[FSR2_MAX_IMAGE_VIEWS];
+    uint32_t imageInfoIndex = 0;
+    uint32_t bufferInfoIndex = 0;
+    uint32_t descriptorWriteIndex = 0;
+    VkDescriptorImageInfo imageInfos[FSR2_MAX_IMAGE_VIEWS];
     VkDescriptorBufferInfo bufferInfos[FSR2_MAX_UNIFORM_BUFFERS];
-    VkWriteDescriptorSet   writeDatas[FSR2_MAX_IMAGE_VIEWS + FSR2_MAX_UNIFORM_BUFFERS];
+    VkWriteDescriptorSet writeDatas[FSR2_MAX_IMAGE_VIEWS + FSR2_MAX_UNIFORM_BUFFERS];
 
-    BackendContext_VK::PipelineLayout* pipelineLayout = reinterpret_cast<BackendContext_VK::PipelineLayout*>(job->computeJobDescriptor.pipeline.rootSignature);
+    BackendContext_VK::PipelineLayout *pipelineLayout = reinterpret_cast<BackendContext_VK::PipelineLayout *>(job->computeJobDescriptor.pipeline.rootSignature);
 
     // bind uavs
     for (uint32_t uav = 0; uav < job->computeJobDescriptor.pipeline.uavCount; ++uav)
@@ -1689,7 +1737,7 @@ static FfxErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, FfxG
         descriptorWriteIndex++;
     }
 
-    // insert all the barriers 
+    // insert all the barriers
     flushBarriers(backendContext, vkCommandBuffer);
 
     // update all uavs and srvs
@@ -1698,7 +1746,7 @@ static FfxErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, FfxG
     // bind pipeline
     backendContext->vkFunctionTable.vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, reinterpret_cast<VkPipeline>(job->computeJobDescriptor.pipeline.pipeline));
 
-    // bind descriptor sets 
+    // bind descriptor sets
     VkDescriptorSet sets[] = {
         backendContext->samplerDescriptorSet,
         pipelineLayout->descriptorSets[pipelineLayout->descriptorSetIndex],
@@ -1718,7 +1766,7 @@ static FfxErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, FfxG
     return FFX_OK;
 }
 
-static FfxErrorCode executeGpuJobCopy(BackendContext_VK* backendContext, FfxGpuJobDescription* job, VkCommandBuffer vkCommandBuffer)
+static FfxErrorCode executeGpuJobCopy(BackendContext_VK *backendContext, FfxGpuJobDescription *job, VkCommandBuffer vkCommandBuffer)
 {
     BackendContext_VK::Resource ffxResourceSrc = backendContext->resources[job->copyJobDescriptor.src.internalIndex];
     BackendContext_VK::Resource ffxResourceDst = backendContext->resources[job->copyJobDescriptor.dst.internalIndex];
@@ -1777,7 +1825,7 @@ static FfxErrorCode executeGpuJobCopy(BackendContext_VK* backendContext, FfxGpuJ
     }
     else
     {
-        VkImageCopy             imageCopies[FSR2_MAX_IMAGE_COPY_MIPS];
+        VkImageCopy imageCopies[FSR2_MAX_IMAGE_COPY_MIPS];
         VkImage vkResourceSrc = ffxResourceSrc.imageResource;
         VkImage vkResourceDst = ffxResourceDst.imageResource;
 
@@ -1802,7 +1850,7 @@ static FfxErrorCode executeGpuJobCopy(BackendContext_VK* backendContext, FfxGpuJ
             extent.height = ffxResourceSrc.resourceDescription.height / (mip + 1);
             extent.depth = ffxResourceSrc.resourceDescription.depth / (mip + 1);
 
-            VkImageCopy& copyRegion = imageCopies[mip];
+            VkImageCopy &copyRegion = imageCopies[mip];
 
             copyRegion.srcSubresource = subresourceLayers;
             copyRegion.srcOffset = offset;
@@ -1817,7 +1865,7 @@ static FfxErrorCode executeGpuJobCopy(BackendContext_VK* backendContext, FfxGpuJ
     return FFX_OK;
 }
 
-static FfxErrorCode executeGpuJobClearFloat(BackendContext_VK* backendContext, FfxGpuJobDescription* job, VkCommandBuffer vkCommandBuffer)
+static FfxErrorCode executeGpuJobClearFloat(BackendContext_VK *backendContext, FfxGpuJobDescription *job, VkCommandBuffer vkCommandBuffer)
 {
     uint32_t idx = job->clearJobDescriptor.target.internalIndex;
     BackendContext_VK::Resource ffxResource = backendContext->resources[idx];
@@ -1849,18 +1897,18 @@ static FfxErrorCode executeGpuJobClearFloat(BackendContext_VK* backendContext, F
     return FFX_OK;
 }
 
-FfxErrorCode ExecuteGpuJobsVK(FfxFsr2Interface* backendInterface, FfxCommandList commandList)
+FfxErrorCode ExecuteGpuJobsVK(FfxFsr2Interface *backendInterface, FfxCommandList commandList)
 {
     FFX_ASSERT(NULL != backendInterface);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
     FfxErrorCode errorCode = FFX_OK;
 
     // execute all renderjobs
     for (uint32_t i = 0; i < backendContext->gpuJobCount; ++i)
     {
-        FfxGpuJobDescription* gpuJob = &backendContext->gpuJobs[i];
+        FfxGpuJobDescription *gpuJob = &backendContext->gpuJobs[i];
         VkCommandBuffer vkCommandBuffer = reinterpret_cast<VkCommandBuffer>(commandList);
 
         switch (gpuJob->jobType)
@@ -1894,15 +1942,15 @@ FfxErrorCode ExecuteGpuJobsVK(FfxFsr2Interface* backendInterface, FfxCommandList
     return FFX_OK;
 }
 
-FfxErrorCode DestroyResourceVK(FfxFsr2Interface* backendInterface, FfxResourceInternal resource)
+FfxErrorCode DestroyResourceVK(FfxFsr2Interface *backendInterface, FfxResourceInternal resource)
 {
     FFX_ASSERT(backendInterface != nullptr);
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
     if (resource.internalIndex != -1)
     {
-        BackendContext_VK::Resource& res = backendContext->resources[resource.internalIndex];
+        BackendContext_VK::Resource &res = backendContext->resources[resource.internalIndex];
 
         if (res.resourceDescription.type == FFX_RESOURCE_TYPE_BUFFER)
         {
@@ -1946,24 +1994,26 @@ FfxErrorCode DestroyResourceVK(FfxFsr2Interface* backendInterface, FfxResourceIn
     return FFX_OK;
 }
 
-FfxErrorCode DestroyPipelineVK(FfxFsr2Interface* backendInterface, FfxPipelineState* pipeline)
+FfxErrorCode DestroyPipelineVK(FfxFsr2Interface *backendInterface, FfxPipelineState *pipeline)
 {
     FFX_ASSERT(backendInterface != nullptr);
     if (!pipeline)
         return FFX_OK;
 
-    BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    BackendContext_VK *backendContext = (BackendContext_VK *)backendInterface->scratchBuffer;
 
-    // destroy pipeline 
+    // destroy pipeline
     VkPipeline computePipeline = reinterpret_cast<VkPipeline>(pipeline->pipeline);
-    if (computePipeline) {
+    if (computePipeline)
+    {
         backendContext->vkFunctionTable.vkDestroyPipeline(backendContext->device, computePipeline, nullptr);
         pipeline->pipeline = nullptr;
     }
 
-    BackendContext_VK::PipelineLayout* pipelineLayout = reinterpret_cast<BackendContext_VK::PipelineLayout*>(pipeline->rootSignature);
-    if (pipelineLayout) {
-        // destroy descriptor sets 
+    BackendContext_VK::PipelineLayout *pipelineLayout = reinterpret_cast<BackendContext_VK::PipelineLayout *>(pipeline->rootSignature);
+    if (pipelineLayout)
+    {
+        // destroy descriptor sets
         for (uint32_t i = 0; i < FSR2_MAX_QUEUED_FRAMES; i++)
             pipelineLayout->descriptorSets[i] = nullptr;
 

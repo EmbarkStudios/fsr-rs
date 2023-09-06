@@ -29,7 +29,7 @@ pub fn generate_bindings(api_dir: &str) {
     let wrapper = format!("{}/ffx_fsr2.h", api_dir);
 
     // Generate bindings
-    let bindings = bindgen::Builder::default()
+    let mut bindings = bindgen::Builder::default()
         .layout_tests(false)
         .derive_default(true)
         .prepend_enum_name(false)
@@ -38,9 +38,13 @@ pub fn generate_bindings(api_dir: &str) {
         .new_type_alias("CommandList")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .parse_callbacks(Box::new(Renamer))
-        .rustified_enum("FfxResourceStates")
-        .generate()
-        .expect("Unable to generate bindings");
+        .rustified_enum("FfxResourceStates");
+
+    if cfg!(not(target_os = "windows")) {
+        bindings = bindings.clang_args(["-DFFX_GCC", "-fshort-wchar", "-fsigned-char"]);
+    }
+
+    let bindings = bindings.generate().expect("Unable to generate bindings");
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());

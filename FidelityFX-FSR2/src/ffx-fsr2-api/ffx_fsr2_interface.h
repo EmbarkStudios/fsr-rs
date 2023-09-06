@@ -53,7 +53,7 @@ FFX_FORWARD_DECLARE(FfxFsr2Interface);
 /// is made to <c><i>ffxFsr2ContextDispatch</i></c>.
 /// 
 /// @ingroup FSR2
-typedef enum FfxFsr2Pass {
+typedef enum FfxFsr2Pass : signed {
 
     FFX_FSR2_PASS_DEPTH_CLIP = 0,                                       ///< A pass which performs depth clipping.
     FFX_FSR2_PASS_RECONSTRUCT_PREVIOUS_DEPTH = 1,                       ///< A pass which performs reconstruction of previous frame's depth.
@@ -68,7 +68,7 @@ typedef enum FfxFsr2Pass {
     FFX_FSR2_PASS_COUNT                                                 ///< The number of passes performed by FSR2.
 } FfxFsr2Pass;
 
-typedef enum FfxFsr2MsgType {
+typedef enum FfxFsr2MsgType : signed  {
     FFX_FSR2_MESSAGE_TYPE_ERROR = 0,
     FFX_FSR2_MESSAGE_TYPE_WARNING = 1,
     FFX_FSR2_MESSAGE_TYPE_COUNT

@@ -369,7 +369,7 @@ FfxResource ffxGetResourceDX12(FfxFsr2Context* context, ID3D12Resource* dx12Reso
     }
 #ifdef _DEBUG
     if (name) {
-        wcscpy_s(resource.name, name);
+        wcscpy(resource.name, name);
     }
 #endif
 
@@ -417,7 +417,7 @@ FfxErrorCode RegisterResourceDX12(
 #ifdef _DEBUG
     const wchar_t* name = inFfxResource->name;
     if (name) {
-        wcscpy_s(backendResource->resourceName, name);
+        wcscpy(backendResource->resourceName, name);
     }
 #endif
 
@@ -810,7 +810,7 @@ FfxErrorCode CreateResourceDX12(
         backendResource->resourcePtr = dx12Resource;
 
 #ifdef _DEBUG
-        wcscpy_s(backendResource->resourceName, createResourceDescription->name);
+        wcscpy(backendResource->resourceName, createResourceDescription->name);
 #endif
         return FFX_OK;
 
@@ -826,7 +826,7 @@ FfxErrorCode CreateResourceDX12(
         backendResource->resourcePtr = dx12Resource;
 
 #ifdef _DEBUG
-        wcscpy_s(backendResource->resourceName, createResourceDescription->name);
+        wcscpy(backendResource->resourceName, createResourceDescription->name);
 #endif
 
         // Create SRVs and UAVs
@@ -1181,17 +1181,17 @@ FfxErrorCode CreatePipelineDX12(
     for (uint32_t srvIndex = 0; srvIndex < outPipeline->srvCount; ++srvIndex)
     {
         outPipeline->srvResourceBindings[srvIndex].slotIndex = shaderBlob.boundSRVResources[srvIndex];
-        wcscpy_s(outPipeline->srvResourceBindings[srvIndex].name, converter.from_bytes(shaderBlob.boundSRVResourceNames[srvIndex]).c_str());
+        wcscpy(outPipeline->srvResourceBindings[srvIndex].name, converter.from_bytes(shaderBlob.boundSRVResourceNames[srvIndex]).c_str());
     }
     for (uint32_t uavIndex = 0; uavIndex < outPipeline->uavCount; ++uavIndex)
     {
         outPipeline->uavResourceBindings[uavIndex].slotIndex = shaderBlob.boundUAVResources[uavIndex];
-        wcscpy_s(outPipeline->uavResourceBindings[uavIndex].name, converter.from_bytes(shaderBlob.boundUAVResourceNames[uavIndex]).c_str());
+        wcscpy(outPipeline->uavResourceBindings[uavIndex].name, converter.from_bytes(shaderBlob.boundUAVResourceNames[uavIndex]).c_str());
     }
     for (uint32_t cbIndex = 0; cbIndex < outPipeline->constCount; ++cbIndex)
     {
         outPipeline->cbResourceBindings[cbIndex].slotIndex = shaderBlob.boundCBVResources[cbIndex];
-        wcscpy_s(outPipeline->cbResourceBindings[cbIndex].name, converter.from_bytes(shaderBlob.boundCBVResourceNames[cbIndex]).c_str());
+        wcscpy(outPipeline->cbResourceBindings[cbIndex].name, converter.from_bytes(shaderBlob.boundCBVResourceNames[cbIndex]).c_str());
     }
 
     // create the PSO
