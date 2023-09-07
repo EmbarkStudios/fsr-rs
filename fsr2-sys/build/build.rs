@@ -18,7 +18,7 @@ fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
         .define("DYNAMIC_LINK_VULKAN", "1")
         .std("c++2a");
     #[cfg(not(target_os = "windows"))]
-    build.define("FFX_GCC", "1").flag("-fshort-wchar");
+    build.define("FFX_GCC", "1");
     #[cfg(feature = "vulkan")]
     build
         .include(&format!("{}/../../shader_permutations/vk", api_dir))

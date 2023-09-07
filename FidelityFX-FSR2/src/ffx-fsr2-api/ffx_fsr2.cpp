@@ -117,7 +117,7 @@ static const ResourceBinding cbResourceBindingTable[] =
 };
 
 // Broad structure of the root signature.
-typedef enum Fsr2RootSignatureLayout : signed 
+typedef enum Fsr2RootSignatureLayout : signed
 {
 
     FSR2_ROOT_SIGNATURE_LAYOUT_UAVS,
@@ -192,7 +192,7 @@ FfxConstantBuffer globalFsr2ConstantBuffers[4] = {
 // Lanczos
 static float lanczos2(float value)
 {
-    return abs(value) < FFX_EPSILON ? 1.f : (sinf(FFX_PI * value) / (FFX_PI * value)) * (sinf(0.5f * FFX_PI * value) / (0.5f * FFX_PI * value));
+    return std::abs(value) < FFX_EPSILON ? 1.f : (sinf(FFX_PI * value) / (FFX_PI * value)) * (sinf(0.5f * FFX_PI * value) / (0.5f * FFX_PI * value));
 }
 
 // Calculate halton number for index and base.

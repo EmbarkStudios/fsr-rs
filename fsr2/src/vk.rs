@@ -1,6 +1,6 @@
 use crate::*;
 use ash::vk::Handle;
-use widestring::U16String;
+use widestring::WideString;
 
 impl From<ash::vk::CommandBuffer> for CommandList {
     fn from(value: ash::vk::CommandBuffer) -> Self {
@@ -67,7 +67,7 @@ pub unsafe fn get_texture_resource(
             size[0],
             size[1],
             format.as_raw(),
-            U16String::from_str(name).as_ptr(),
+            WideString::from_str(name).as_ptr(),
             state,
         )
     }
