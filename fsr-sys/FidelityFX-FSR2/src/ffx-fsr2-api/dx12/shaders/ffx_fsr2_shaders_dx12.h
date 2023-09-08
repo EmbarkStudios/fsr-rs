@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include "../../ffx_fsr2_interface.h"
 
 #if defined(__cplusplus)

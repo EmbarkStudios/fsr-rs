@@ -21,10 +21,10 @@
 
 #include <algorithm> // for max used inside SPD CPU code.
 #include <cmath>     // for fabs, abs, sinf, sqrt, etc.
-#include <string.h>  // for memset
+#include <cstring>  // for memset
 #include <cfloat>    // for FLT_EPSILON
 #include <locale>
-#include <wchar.h>
+#include <cwchar>
 #include "ffx_fsr2.h"
 #define FFX_CPU
 #include "shaders/ffx_core.h"

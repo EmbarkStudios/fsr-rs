@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <cstdlib>
 
 #if defined (FFX_GCC)
