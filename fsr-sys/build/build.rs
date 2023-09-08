@@ -4,6 +4,10 @@ fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
     let sources = glob::glob(&format!("{}/**/*.cpp", api_dir)).expect("Failed to find sources");
 
     // Link compiled lib
+    println!(
+        "cargo:rustc-link-search={}",
+        std::env::var("OUT_DIR").unwrap()
+    );
     println!("cargo:rustc-link-lib=ffx_fsr2_api");
 
     // Compile d3d12 / vulkan  backend into the lib
