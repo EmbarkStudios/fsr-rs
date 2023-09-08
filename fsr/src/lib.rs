@@ -117,7 +117,7 @@ impl From<ContextDescription<'_>> for fsr_sys::ContextDescription {
     fn from(val: ContextDescription<'_>) -> Self {
         fsr_sys::ContextDescription {
             callbacks: *val.interface,
-            flags: val.flags.bits,
+            flags: val.flags.bits(),
             maxRenderSize: fsr_sys::Dimensions2D {
                 width: val.max_render_size[0],
                 height: val.max_render_size[1],
