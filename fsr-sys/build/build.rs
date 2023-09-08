@@ -3,6 +3,9 @@ mod bindgen;
 fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
     let sources = glob::glob(&format!("{}/**/*.cpp", api_dir)).expect("Failed to find sources");
 
+    // Link compiled lib
+    println!("cargo:rustc-link-lib=libffx_fsr2_api");
+
     // Compile d3d12 / vulkan  backend into the lib
     #[cfg(not(feature = "d3d12"))]
     let sources = sources.filter(|p| !p.as_ref().unwrap().to_str().unwrap().contains("dx12"));
@@ -25,9 +28,6 @@ fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
     #[cfg(feature = "d3d12")]
     build.include(&format!("{}/../../shader_permutations/dx12", api_dir));
     build.compile("ffx_fsr2_api");
-
-    // Link compiled lib
-    println!("cargo:rustc-link-lib=dylib=ffx_fsr2_api");
 }
 
 fn main() {
