@@ -83,7 +83,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "fsr"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "ash",
  "bitflags",
@@ -94,7 +94,7 @@ dependencies = [
 
 [[package]]
 name = "fsr-sys"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bindgen",
  "cc",
