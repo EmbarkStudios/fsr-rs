@@ -22,7 +22,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #if defined (FFX_GCC)
 /// FidelityFX exported functions

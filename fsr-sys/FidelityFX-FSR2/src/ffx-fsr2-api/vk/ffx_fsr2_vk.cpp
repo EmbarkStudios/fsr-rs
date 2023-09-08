@@ -25,7 +25,7 @@
 #include "../ffx_fsr2_private.h"
 #include <string.h>
 #include <math.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <codecvt>
 #include <locale>
 
