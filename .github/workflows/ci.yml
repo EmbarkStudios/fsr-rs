@@ -1,7 +1,8 @@
 on:
   push:
     branches:
-      # - main
+      - main
+      - sys-crate
     tags:
       - "*"
   pull_request:
