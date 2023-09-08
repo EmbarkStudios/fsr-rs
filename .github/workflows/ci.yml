@@ -33,4 +33,4 @@ jobs:
       - name: cargo clippy
         run: |
           rustup component add clippy
-          cargo build --all-targets -- -D warnings
+          cargo build --features=vulkan --all-targets
