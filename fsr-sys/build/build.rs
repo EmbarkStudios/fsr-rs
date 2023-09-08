@@ -28,8 +28,8 @@ fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
 }
 
 fn main() {
-    let api_dir = "../FidelityFX-FSR2/src/ffx-fsr2-api";
-    let vk_include_dir = "../Vulkan-Headers/include/";
+    let api_dir = "./FidelityFX-FSR2/src/ffx-fsr2-api";
+    let vk_include_dir = "./Vulkan-Headers/include/";
 
     build_fsr(api_dir, vk_include_dir);
     bindgen::generate_bindings(api_dir);
