@@ -41,7 +41,7 @@ pub fn generate_bindings(api_dir: &str) {
         .rustified_enum("FfxResourceStates");
 
     if cfg!(not(target_os = "windows")) {
-        bindings = bindings.clang_args(["-DFFX_GCC", "-fshort-wchar"]);
+        bindings = bindings.clang_args(["-DFFX_GCC"]);
     }
 
     let bindings = bindings.generate().expect("Unable to generate bindings");
@@ -66,6 +66,7 @@ pub fn generate_vk_bindings(api_dir: &str, vk_include_dir: &str) {
         .header(wrapper)
         .header(&wrapper_api)
         .clang_arg("-xc++")
+        .clang_arg("-std=c++2a")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .parse_callbacks(Box::new(Renamer))
         .clang_arg(format!("-I{}", vk_include_dir))
@@ -73,7 +74,7 @@ pub fn generate_vk_bindings(api_dir: &str, vk_include_dir: &str) {
         .allowlist_file(&wrapper_api);
 
     if cfg!(not(target_os = "windows")) {
-        bindings = bindings.clang_args(["-DFFX_GCC", "-fshort-wchar"]);
+        bindings = bindings.clang_args(["-DFFX_GCC"]);
     }
 
     let bindings = bindings.generate().expect("Unable to generate bindings");
