@@ -1,5 +1,5 @@
 # Publishes docs built off latest git main branch to a GitHub Pages site.
-# The docs root will then be served at https://embarkstudios.github.io/fsr2/fsr2/index.html
+# The docs root will then be served at https://embarkstudios.github.io/fsr-rs/fsr-rs/index.html
 # For example, https://embarkstudios.github.io/presser/presser/index.html
 #
 # You must also go to the Pages settings for your repo and set it to serve from Actions for this to work

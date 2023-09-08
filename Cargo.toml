@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "fsr2-sys",
-    "fsr2",
+    "fsr-sys",
+    "fsr",
 ]

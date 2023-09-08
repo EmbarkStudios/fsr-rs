@@ -1,16 +1,16 @@
 <div align="center">
 
-# 🌉 fsr2
+# 🌉 fsr
 
 **Rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2)**
 
 
 [![Embark](https://img.shields.io/badge/embark-open%20source-blueviolet.svg)](https://embark.dev)
 [![Embark](https://img.shields.io/badge/discord-ark-%237289da.svg?logo=discord)](https://discord.gg/dAuKfZS)
-[![Crates.io](https://img.shields.io/crates/v/fsr2.svg)](https://crates.io/crates/fsr2)
-[![Docs](https://docs.rs/fsr2/badge.svg)](https://docs.rs/fsr2)
-[![dependency status](https://deps.rs/repo/github/EmbarkStudios/fsr2/status.svg)](https://deps.rs/repo/github/EmbarkStudios/fsr2)
-[![Build status](https://github.com/EmbarkStudios/fsr2/workflows/CI/badge.svg)](https://github.com/EmbarkStudios/fsr2/actions)
+[![Crates.io](https://img.shields.io/crates/v/fsr.svg)](https://crates.io/crates/fsr)
+[![Docs](https://docs.rs/fsr/badge.svg)](https://docs.rs/fsr)
+[![dependency status](https://deps.rs/repo/github/EmbarkStudios/fsr-rs/status.svg)](https://deps.rs/repo/github/EmbarkStudios/fsr-rs)
+[![Build status](https://github.com/EmbarkStudios/fsr-rs/workflows/CI/badge.svg)](https://github.com/EmbarkStudios/fsr-rs/actions)
 </div>
 
 Unsafe rust bindings for [FidelityFX Super Resolution 2](https://github.com/GPUOpen-Effects/FidelityFX-FSR2).
@@ -20,7 +20,7 @@ API | Feature Flag | Crate
 Vulkan | `vulkan` | [ash](https://crates.io/crates/ash)
 DirectX12 | `d3d12`| [windows](https://crates.io/crates/windows)
 
-`fsr2-sys` contains opaque types for dx12/vulkan which can be used with any api bindings.
+`fsr-sys` contains opaque types for dx12/vulkan which can be used with any api bindings.
 
 Currently Vulkan is expected to be linked dynamically. See [ash`](https://docs.rs/ash/latest/ash/) for more information.
 

@@ -1,12 +1,12 @@
 [package]
-name = "fsr2-sys"
+name = "fsr-sys"
 description = "Raw FidelityFX Super Resolution 2 bindings for rust."
 version = "0.1.0"
 edition = "2021"
 build = "build/build.rs"
 authors = ["Embark <opensource@embark-studios.com>"]
 license = "MIT"
-repository = "https://github.com/EmbarkStudios/fsr2"
+repository = "https://github.com/EmbarkStudios/fsr-rs"
 
 [build-dependencies]
 bindgen = { version = "0.65" }

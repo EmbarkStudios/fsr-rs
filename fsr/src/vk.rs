@@ -4,7 +4,7 @@ use widestring::WideString;
 
 impl From<ash::vk::CommandBuffer> for CommandList {
     fn from(value: ash::vk::CommandBuffer) -> Self {
-        unsafe { CommandList(fsr2_sys::vk::GetCommandListVK(value.as_raw())) }
+        unsafe { CommandList(fsr_sys::vk::GetCommandListVK(value.as_raw())) }
     }
 }
 
@@ -13,7 +13,7 @@ pub unsafe fn get_scratch_memory_size(
     physical_device: ash::vk::PhysicalDevice,
 ) -> usize {
     unsafe {
-        fsr2_sys::vk::GetScratchMemorySizeVK(
+        fsr_sys::vk::GetScratchMemorySizeVK(
             physical_device.as_raw(),
             std::mem::transmute(Some(
                 instance.fp_v1_0().enumerate_device_extension_properties,
@@ -28,9 +28,9 @@ pub unsafe fn get_interface(
     physical_device: ash::vk::PhysicalDevice,
     scratch_buffer: &mut Vec<u8>,
 ) -> Result<Interface, Error> {
-    let mut interface = fsr2_sys::Interface::default();
+    let mut interface = fsr_sys::Interface::default();
     let error = unsafe {
-        fsr2_sys::vk::GetInterfaceVK(
+        fsr_sys::vk::GetInterfaceVK(
             &mut interface,
             scratch_buffer.as_mut_ptr().cast::<std::ffi::c_void>(),
             scratch_buffer.len(),
@@ -40,14 +40,14 @@ pub unsafe fn get_interface(
             std::mem::transmute(Some(instance.fp_v1_0().get_device_proc_addr)),
         )
     };
-    if error != fsr2_sys::FFX_OK {
+    if error != fsr_sys::FFX_OK {
         return Err(Error::from_error_code(error));
     }
     Ok(interface)
 }
 
 pub unsafe fn get_device(device: ash::Device) -> Device {
-    unsafe { fsr2_sys::vk::GetDeviceVK(device.handle().as_raw()) }
+    unsafe { fsr_sys::vk::GetDeviceVK(device.handle().as_raw()) }
 }
 
 pub unsafe fn get_texture_resource(
@@ -60,7 +60,7 @@ pub unsafe fn get_texture_resource(
     name: &str,
 ) -> Resource {
     unsafe {
-        fsr2_sys::vk::GetTextureResourceVK(
+        fsr_sys::vk::GetTextureResourceVK(
             &mut context.0,
             image.as_raw(),
             image_view.as_raw(),
