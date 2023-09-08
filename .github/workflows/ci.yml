@@ -2,7 +2,7 @@ on:
   push:
     branches:
       - main
-      - sys-crate
+      - test
     tags:
       - "*"
   pull_request:
