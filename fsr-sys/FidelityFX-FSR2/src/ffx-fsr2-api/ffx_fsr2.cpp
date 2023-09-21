@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 
 #include <algorithm> // for max used inside SPD CPU code.
-#include <cmath>     // for fabs, abs, sinf, sqrt, etc.
+#include <math.h>     // for fabs, abs, sinf, sqrt, etc.
 #include <cstring>  // for memset
 #include <cfloat>    // for FLT_EPSILON
 #include <locale>

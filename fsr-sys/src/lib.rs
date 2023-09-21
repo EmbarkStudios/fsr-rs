@@ -2,7 +2,10 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(clippy::excessive_precision)]
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+type widechar = widestring::WideChar;
+
+include!("bindings.rs");
 
 #[cfg(feature = "vulkan")]
 pub mod vk {
@@ -21,7 +24,7 @@ pub mod vk {
     type VkFormat = i32;
     type VkImageLayout = i32;
 
-    include!(concat!(env!("OUT_DIR"), "/vk_bindings.rs"));
+    include!("vk_bindings.rs");
 }
 
 #[cfg(feature = "d3d12")]
@@ -34,5 +37,5 @@ pub mod d3d12 {
 
     type UINT = u32;
 
-    include!(concat!(env!("OUT_DIR"), "/d3d12_bindings.rs"));
+    include!("d3d12_bindings.rs");
 }

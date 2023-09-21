@@ -99,6 +99,7 @@ dependencies = [
  "bindgen",
  "cc",
  "glob",
+ "widestring",
 ]
 
 [[package]]

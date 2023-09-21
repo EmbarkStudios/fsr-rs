@@ -24,6 +24,11 @@
 #include <cstdint>
 #include <cstdlib>
 
+// Let us typedef it with sidestring::WideChar. 
+// Bindgen generated a u16/u32 for some reason instead of wchar.
+typedef wchar_t widechar;
+#define wchar_t widechar
+
 #if defined (FFX_GCC)
 /// FidelityFX exported functions
 #define FFX_API

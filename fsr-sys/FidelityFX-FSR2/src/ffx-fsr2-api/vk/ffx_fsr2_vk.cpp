@@ -24,7 +24,7 @@
 #include "shaders/ffx_fsr2_shaders_vk.h" // include all the precompiled VK shaders for the FSR2 passes
 #include "../ffx_fsr2_private.h"
 #include <cstring>
-#include <cmath>
+#include <math.h>
 #include <cstdlib>
 #include <codecvt>
 #include <locale>
