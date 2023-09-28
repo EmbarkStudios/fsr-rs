@@ -171,7 +171,7 @@ pub struct DispatchDescription {
     pub pre_exposure: f32,
     pub frame_time_delta: f32,
 
-    pub jitter_offfset: [f32; 2],
+    pub jitter_offset: [f32; 2],
 
     pub render_size: [u32; 2],
 
@@ -215,7 +215,7 @@ impl DispatchDescription {
             motion_vector_scale: [1.0, 1.0],
             pre_exposure: 1.0,
             frame_time_delta,
-            jitter_offfset: [0.0, 0.0],
+            jitter_offset: [0.0, 0.0],
             render_size,
             camera_near: 0.01,
             camera_far: 1000.0,
@@ -258,8 +258,8 @@ impl DispatchDescription {
         self
     }
 
-    pub fn jitter_offfset(mut self, value: [f32; 2]) -> DispatchDescription {
-        self.jitter_offfset = value;
+    pub fn jitter_offset(mut self, value: [f32; 2]) -> DispatchDescription {
+        self.jitter_offset = value;
         self
     }
 
@@ -326,8 +326,8 @@ impl From<DispatchDescription> for fsr_sys::DispatchDescription {
             },
             preExposure: val.pre_exposure,
             jitterOffset: fsr_sys::FloatCoords2D {
-                x: val.jitter_offfset[0],
-                y: val.jitter_offfset[1],
+                x: val.jitter_offset[0],
+                y: val.jitter_offset[1],
             },
             cameraFovAngleVertical: val.camera_fov_y,
             sharpness: val.sharpness,
