@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{interface::ScratchBuffer, *};
 use ash::vk::Handle;
 use widestring::WideString;
 
@@ -8,32 +8,32 @@ impl From<ash::vk::CommandBuffer> for CommandList {
     }
 }
 
-pub unsafe fn get_scratch_memory_size(
+pub unsafe fn get_interface(
+    entry: &ash::Entry,
     instance: &ash::Instance,
     physical_device: ash::vk::PhysicalDevice,
-) -> usize {
-    unsafe {
+) -> Result<Interface, Error> {
+    let scratch_buffer_size = unsafe {
         fsr_sys::vk::GetScratchMemorySizeVK(
             physical_device.as_raw(),
             std::mem::transmute(Some(
                 instance.fp_v1_0().enumerate_device_extension_properties,
             )),
         )
-    }
-}
+    };
 
-pub unsafe fn get_interface(
-    entry: &ash::Entry,
-    instance: &ash::Instance,
-    physical_device: ash::vk::PhysicalDevice,
-    scratch_buffer: &mut Vec<u8>,
-) -> Result<Interface, Error> {
-    let mut interface = fsr_sys::Interface::default();
+    let mut retval = Interface {
+        scratch_buffer: ScratchBuffer::new(scratch_buffer_size)
+            .map_err(|e| Error::ScratchBuffer(e))?,
+        interface: Default::default(),
+    };
+
+    // Create the actual fsr interface
     let error = unsafe {
         fsr_sys::vk::GetInterfaceVK(
-            &mut interface,
-            scratch_buffer.as_mut_ptr().cast::<std::ffi::c_void>(),
-            scratch_buffer.len(),
+            &mut retval.interface,
+            retval.scratch_buffer.ptr().cast::<std::ffi::c_void>(),
+            retval.scratch_buffer.len(),
             instance.handle().as_raw(),
             physical_device.as_raw(),
             std::mem::transmute(Some(entry.static_fn().get_instance_proc_addr)),
@@ -41,9 +41,10 @@ pub unsafe fn get_interface(
         )
     };
     if error != fsr_sys::FFX_OK {
-        return Err(Error::from_error_code(error));
+        return Err(Error::Fsr(FsrError::from_error_code(error)));
     }
-    Ok(interface)
+
+    Ok(retval)
 }
 
 pub unsafe fn get_device(device: ash::Device) -> Device {
@@ -61,7 +62,7 @@ pub unsafe fn get_texture_resource(
 ) -> Resource {
     unsafe {
         fsr_sys::vk::GetTextureResourceVK(
-            &mut context.0,
+            &mut context.context,
             image.as_raw(),
             image_view.as_raw(),
             size[0],

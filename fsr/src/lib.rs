@@ -16,7 +16,7 @@
 //!
 //! // Create the FSR context
 //! let context_desc = fsr::ContextDescription {
-//!     interface: &fsr_interface,
+//!     interface: fsr_interface,
 //!     device: &fsr::vk::get_device(vk_device),
 //!     display_size: [1920, 1080],
 //!     max_render_size: [1280, 720],
@@ -43,8 +43,10 @@ pub mod d3d12;
 #[cfg(feature = "vulkan")]
 pub mod vk;
 
+pub mod interface;
+pub use crate::interface::Interface;
+
 pub use fsr_sys::Device;
-pub use fsr_sys::Interface;
 pub use fsr_sys::MsgType;
 pub use fsr_sys::Resource;
 pub use fsr_sys::ResourceStates;
@@ -52,11 +54,14 @@ pub use fsr_sys::ResourceStates;
 /// A typedef representing a command list or command buffer.
 pub struct CommandList(fsr_sys::CommandList);
 /// A structure encapsulating the FidelityFX Super Resolution 2 context.
-pub struct Context(fsr_sys::Context);
+pub struct Context {
+    pub(crate) context: fsr_sys::Context,
+    _interface: Interface,
+}
 
 #[repr(i32)]
 #[derive(Debug)]
-pub enum Error {
+pub enum FsrError {
     InvalidPointer = fsr_sys::FFX_ERROR_INVALID_POINTER,
     InvalidAlignment = fsr_sys::FFX_ERROR_INVALID_ALIGNMENT,
     InvalidSize = fsr_sys::FFX_ERROR_INVALID_SIZE,
@@ -74,15 +79,15 @@ pub enum Error {
     Unknown = 0,
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for FsrError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "SuperError is here!")
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for FsrError {}
 
-impl Error {
+impl FsrError {
     fn from_error_code(value: fsr_sys::ErrorCode) -> Self {
         match value {
             fsr_sys::FFX_ERROR_INVALID_POINTER => Self::InvalidPointer,
@@ -104,8 +109,17 @@ impl Error {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Failed to allocate scratch buffer")]
+    ScratchBuffer(#[source] std::alloc::LayoutError),
+
+    #[error("Failed compiling module dependency")] // TODO: show which
+    Fsr(#[source] FsrError),
+}
+
 pub struct ContextDescription<'a> {
-    pub interface: &'a Interface,
+    pub interface: Interface,
     pub flags: InitializationFlagBits,
     pub max_render_size: [u32; 2],
     pub display_size: [u32; 2],
@@ -113,10 +127,10 @@ pub struct ContextDescription<'a> {
     pub message_callback: Option<unsafe extern "C" fn(MsgType, *const widestring::WideChar)>,
 }
 
-impl From<ContextDescription<'_>> for fsr_sys::ContextDescription {
-    fn from(val: ContextDescription<'_>) -> Self {
+impl From<&ContextDescription<'_>> for fsr_sys::ContextDescription {
+    fn from(val: &ContextDescription<'_>) -> Self {
         fsr_sys::ContextDescription {
-            callbacks: *val.interface,
+            callbacks: val.interface.interface,
             flags: val.flags.bits(),
             maxRenderSize: fsr_sys::Dimensions2D {
                 width: val.max_render_size[0],
@@ -337,29 +351,32 @@ impl From<DispatchDescription> for fsr_sys::DispatchDescription {
 }
 
 impl Context {
-    pub fn new(desc: ContextDescription<'_>) -> Result<Self, Error> {
+    pub unsafe fn new(desc: ContextDescription<'_>) -> Result<Self, Error> {
         let mut context = fsr_sys::Context::default();
         unsafe {
-            let error = fsr_sys::ContextCreate(&mut context, &desc.into());
+            let error = fsr_sys::ContextCreate(&mut context, &(&desc).into());
             if error != fsr_sys::FFX_OK {
-                return Err(Error::from_error_code(error));
+                return Err(Error::Fsr(FsrError::from_error_code(error)));
             }
         }
-        Ok(Context(context))
+        Ok(Context {
+            context,
+            _interface: desc.interface,
+        })
     }
 
     pub unsafe fn dispatch(&mut self, desc: DispatchDescription) -> Result<(), Error> {
-        let error = unsafe { fsr_sys::ContextDispatch(&mut self.0, &desc.into()) };
+        let error = unsafe { fsr_sys::ContextDispatch(&mut self.context, &desc.into()) };
         if error != fsr_sys::FFX_OK {
-            return Err(Error::from_error_code(error));
+            return Err(Error::Fsr(FsrError::from_error_code(error)));
         }
         Ok(())
     }
 
     pub unsafe fn destroy(&mut self) -> Result<(), Error> {
-        let error = unsafe { fsr_sys::ContextDestroy(&mut self.0) };
+        let error = unsafe { fsr_sys::ContextDestroy(&mut self.context) };
         if error != fsr_sys::FFX_OK {
-            return Err(Error::from_error_code(error));
+            return Err(Error::Fsr(FsrError::from_error_code(error)));
         }
         Ok(())
     }
