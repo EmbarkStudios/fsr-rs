@@ -535,10 +535,13 @@ pub const FFX_FSR2_PASS_TCR_AUTOGENERATE: Pass = 8;
 pub const FFX_FSR2_PASS_COUNT: Pass = 9;
 #[doc = " An enumeration of all the passes which constitute the FSR2 algorithm.\n\n FSR2 is implemented as a composite of several compute passes each\n computing a key part of the final result. Each call to the\n <c><i>FfxFsr2ScheduleGpuJobFunc</i></c> callback function will\n correspond to a single pass included in <c><i>FfxFsr2Pass</i></c>. For a\n more comprehensive description of each pass, please refer to the FSR2\n reference documentation.\n\n Please note in some cases e.g.: <c><i>FFX_FSR2_PASS_ACCUMULATE</i></c>\n and <c><i>FFX_FSR2_PASS_ACCUMULATE_SHARPEN</i></c> either one pass or the\n other will be used (they are mutually exclusive). The choice of which will\n depend on the way the <c><i>FfxFsr2Context</i></c> is created and the\n precise contents of <c><i>FfxFsr2DispatchParamters</i></c> each time a call\n is made to <c><i>ffxFsr2ContextDispatch</i></c>.\n\n @ingroup FSR2"]
 pub type Pass = ::std::os::raw::c_int;
-pub const FFX_FSR2_MESSAGE_TYPE_ERROR: MsgType = 0;
-pub const FFX_FSR2_MESSAGE_TYPE_WARNING: MsgType = 1;
-pub const FFX_FSR2_MESSAGE_TYPE_COUNT: MsgType = 2;
-pub type MsgType = ::std::os::raw::c_int;
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum MsgType {
+    FFX_FSR2_MESSAGE_TYPE_ERROR = 0,
+    FFX_FSR2_MESSAGE_TYPE_WARNING = 1,
+    FFX_FSR2_MESSAGE_TYPE_COUNT = 2,
+}
 #[doc = " Create and initialize the backend context.\n\n The callback function sets up the backend context for rendering.\n It will create or reference the device and create required internal data structures.\n\n @param [in] backendInterface                    A pointer to the backend interface.\n @param [in] device                              The FfxDevice obtained by ffxGetDevice(DX12/VK/...).\n\n @retval\n FFX_OK                                          The operation completed successfully.\n @retval\n Anything else                                   The operation failed.\n\n @ingroup FSR2"]
 pub type CreateBackendContextFunc = ::std::option::Option<
     unsafe extern "C" fn(backendInterface: *mut Interface, device: Device) -> ErrorCode,

@@ -42,6 +42,7 @@ pub fn generate_bindings(api_dir: &str) {
         .new_type_alias("CommandList")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .parse_callbacks(Box::new(Renamer))
+        .rustified_enum("FfxFsr2MsgType")
         .rustified_enum("FfxResourceStates");
 
     if cfg!(not(target_os = "windows")) {

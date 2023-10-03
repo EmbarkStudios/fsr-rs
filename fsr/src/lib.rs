@@ -110,7 +110,7 @@ pub struct ContextDescription<'a> {
     pub max_render_size: [u32; 2],
     pub display_size: [u32; 2],
     pub device: &'a Device,
-    pub message_callback: Option<unsafe extern "C" fn(i32, *const widestring::WideChar)>,
+    pub message_callback: Option<unsafe extern "C" fn(MsgType, *const widestring::WideChar)>,
 }
 
 impl From<ContextDescription<'_>> for fsr_sys::ContextDescription {
