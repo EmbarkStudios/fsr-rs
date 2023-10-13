@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+- Remove `glob` build time dependency
 ## [0.1.0] - 2023-03-02
 ### Added
 - Initial Fsr2 bindings for vulkan.
