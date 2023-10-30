@@ -1,10 +1,10 @@
 [package]
 name = "fsr-sys"
 description = "Raw FidelityFX Super Resolution 2 bindings for rust."
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 build = "build/build.rs"
-authors = ["Embark <opensource@embark-studios.com>"]
+authors = [ "Embark <opensource@embark-studios.com>" ]
 license = "MIT"
 repository = "https://github.com/EmbarkStudios/fsr-rs"
 
@@ -17,7 +17,6 @@ cc = "1.0"
 glob = "0.3"
 
 [features]
-vulkan = []
-d3d12 = []
-generate-bindings = ["dep:bindgen"]
-
+vulkan = [  ]
+d3d12 = [  ]
+generate-bindings = [ "dep:bindgen" ]
