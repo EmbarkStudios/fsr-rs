@@ -2,5 +2,8 @@
 resolver = "2"
 members = [
     "fsr-sys",
-    "fsr",
+    "fsr"
 ]
+
+[patch.crates-io]
+ash = { git = "https://github.com/EmbarkStudios/ash", branch = "nv-low-latency2" }

@@ -4,9 +4,8 @@ version = 3
 
 [[package]]
 name = "ash"
-version = "0.37.2+1.3.238"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28bf19c1f0a470be5fbf7522a308a05df06610252c5bcf5143e1b23f629a9a03"
+version = "0.38.0+1.3.269"
+source = "git+https://github.com/EmbarkStudios/ash?branch=nv-low-latency2#69f1ba2eedfa13ecd39ef09f4ebe3045d46f2c71"
 dependencies = [
  "libloading",
 ]
