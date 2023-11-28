@@ -55,7 +55,7 @@ pub use fsr_sys::ResourceStates;
 pub struct CommandList(fsr_sys::CommandList);
 /// A structure encapsulating the FidelityFX Super Resolution 2 context.
 pub struct Context {
-    pub(crate) context: fsr_sys::Context,
+    pub(crate) context: Box<fsr_sys::Context>, // `fsr_sys::Context` is rather large to live on the stack.
     _interface: Interface,
 }
 
@@ -352,9 +352,9 @@ impl From<DispatchDescription> for fsr_sys::DispatchDescription {
 
 impl Context {
     pub unsafe fn new(desc: ContextDescription<'_>) -> Result<Self, Error> {
-        let mut context = fsr_sys::Context::default();
+        let mut context = Box::new(fsr_sys::Context::default());
         unsafe {
-            let error = fsr_sys::ContextCreate(&mut context, &(&desc).into());
+            let error = fsr_sys::ContextCreate(context.as_mut(), &(&desc).into());
             if error != fsr_sys::FFX_OK {
                 return Err(Error::Fsr(FsrError::from_error_code(error)));
             }
@@ -366,7 +366,7 @@ impl Context {
     }
 
     pub unsafe fn dispatch(&mut self, desc: DispatchDescription) -> Result<(), Error> {
-        let error = unsafe { fsr_sys::ContextDispatch(&mut self.context, &desc.into()) };
+        let error = unsafe { fsr_sys::ContextDispatch(self.context.as_mut(), &desc.into()) };
         if error != fsr_sys::FFX_OK {
             return Err(Error::Fsr(FsrError::from_error_code(error)));
         }
@@ -374,7 +374,7 @@ impl Context {
     }
 
     pub unsafe fn destroy(&mut self) -> Result<(), Error> {
-        let error = unsafe { fsr_sys::ContextDestroy(&mut self.context) };
+        let error = unsafe { fsr_sys::ContextDestroy(self.context.as_mut()) };
         if error != fsr_sys::FFX_OK {
             return Err(Error::Fsr(FsrError::from_error_code(error)));
         }
