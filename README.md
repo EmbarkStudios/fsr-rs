@@ -22,7 +22,7 @@ DirectX12 | `d3d12`| [windows](https://crates.io/crates/windows)
 
 `fsr-sys` contains opaque types for dx12/vulkan which can be used with any api bindings.
 
-Currently Vulkan is expected to be linked dynamically. See [ash`](https://docs.rs/ash/latest/ash/) for more information.
+Currently Vulkan is expected to be linked dynamically. See [`ash`](https://docs.rs/ash/latest/ash/) for more information.
 
 ## Contributing
 
