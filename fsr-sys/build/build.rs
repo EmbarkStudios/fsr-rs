@@ -18,8 +18,9 @@ fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
         .cpp(true)
         .define("DYNAMIC_LINK_VULKAN", "1");
 
-    #[cfg(not(target_os = "windows"))]
-    build.define("FFX_GCC", "1").std("c++2a");
+    if std::env::var("CARGO_CFG_UNIX").is_ok() {
+        build.define("FFX_GCC", "1").std("c++2a");
+    }
 
     #[cfg(feature = "vulkan")]
     build
