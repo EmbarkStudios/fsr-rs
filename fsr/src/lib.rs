@@ -352,7 +352,7 @@ impl From<DispatchDescription> for fsr_sys::DispatchDescription {
 
 impl Context {
     pub unsafe fn new(desc: ContextDescription<'_>) -> Result<Self, Error> {
-        let mut context = Box::new(fsr_sys::Context::default());
+        let mut context = Box::<fsr_sys::Context>::default();
         unsafe {
             let error = fsr_sys::ContextCreate(context.as_mut(), &(&desc).into());
             if error != fsr_sys::FFX_OK {
