@@ -43,7 +43,7 @@ pub unsafe fn get_texture_resource(
     shader_component_mapping: u32,
 ) {
     fsr_sys::d3d12::GetResourceDX12(
-        &mut context.context,
+        context.context.as_mut(),
         resource as *mut _ as _,
         U16String::from_str(name).as_ptr(),
         state,
