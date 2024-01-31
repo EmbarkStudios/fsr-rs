@@ -62,7 +62,7 @@ pub unsafe fn get_texture_resource(
 ) -> Resource {
     unsafe {
         fsr_sys::vk::GetTextureResourceVK(
-            &mut context.context,
+            context.context.as_mut(),
             image.as_raw(),
             image_view.as_raw(),
             size[0],
