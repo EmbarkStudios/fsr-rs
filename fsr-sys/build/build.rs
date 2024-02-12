@@ -2,19 +2,27 @@
 mod bindgen;
 
 fn build_fsr(api_dir: &str, _vk_include_dir: &str) {
-    let sources = glob::glob(&format!("{}/**/*.cpp", api_dir)).expect("Failed to find sources");
+    let sources = [
+        "ffx_assert.cpp",
+        "dx12/shaders/ffx_fsr2_shaders_dx12.cpp",
+        "dx12/ffx_fsr2_dx12.cpp",
+        "ffx_fsr2.cpp",
+        "vk/shaders/ffx_fsr2_shaders_vk.cpp",
+        "vk/ffx_fsr2_vk.cpp",
+    ]
+    .into_iter()
+    .map(|p| format!("{api_dir}/{p}"))
+    .collect::<Vec<_>>();
 
     // Compile d3d12 / vulkan  backend into the lib
     #[cfg(not(feature = "d3d12"))]
-    let sources = sources.filter(|p| !p.as_ref().unwrap().to_str().unwrap().contains("dx12"));
+    let sources = sources.into_iter().filter(|p| !p.contains("dx12"));
     #[cfg(not(feature = "vulkan"))]
-    let sources = sources.filter(|p| !p.as_ref().unwrap().to_str().unwrap().contains("vk"));
-
-    let sources: Vec<_> = sources.map(|p| p.unwrap()).collect();
+    let sources = sources.into_iter().filter(|p| !p.contains("vk"));
 
     let mut build = cc::Build::new();
     build
-        .files(sources.iter())
+        .files(sources)
         .cpp(true)
         .define("DYNAMIC_LINK_VULKAN", "1");
 

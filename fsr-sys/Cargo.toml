@@ -14,10 +14,8 @@ widestring = "1.0"
 [build-dependencies]
 bindgen = { version = "0.69", optional = true }
 cc = "1.0"
-glob = "0.3"
 
 [features]
 vulkan = []
 d3d12 = []
 generate-bindings = ["dep:bindgen"]
-
