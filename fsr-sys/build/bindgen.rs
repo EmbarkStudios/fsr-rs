@@ -1,15 +1,24 @@
 use std::{env, path::PathBuf};
 
+use bindgen::Builder;
+use regex::Regex;
+
 #[derive(Debug)]
-struct Renamer;
+struct Renamer {
+    pattern: Regex,
+}
+
+impl Renamer {
+    fn new() -> Self {
+        Self {
+            pattern: Regex::new(r"(?i)^ffx_?(fsr2)?_?").unwrap(),
+        }
+    }
+}
 impl bindgen::callbacks::ParseCallbacks for Renamer {
     fn item_name(&self, name: &str) -> Option<String> {
         // Remove ffx/ffxfsr2 prefixes.
-        let name = name
-            .replace("ffxFsr2", "")
-            .replace("ffx", "")
-            .replace("FfxFsr2", "")
-            .replace("Ffx", "");
+        let name = self.pattern.replace_all(name, "").to_string();
 
         Some(name)
     }
@@ -21,29 +30,30 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
         original_variant_name: &str,
         _variant_value: bindgen::callbacks::EnumVariantValue,
     ) -> Option<String> {
-        Some(original_variant_name.replace("FFX_RESOURCE_STATE_", ""))
+        Some(
+            self.pattern
+                .replace_all(original_variant_name, "")
+                .to_string(),
+        )
     }
+}
+
+fn builder() -> Builder {
+    Builder::default()
+        .generate_comments(false)
+        .derive_default(true)
+        .prepend_enum_name(false)
+        .clang_arg("-xc++")
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .parse_callbacks(Box::new(Renamer::new()))
 }
 
 pub fn generate_bindings(api_dir: &str) {
     let wrapper = format!("{}/ffx_fsr2.h", api_dir);
 
-    // Generate bindings
-    let mut bindings = bindgen::Builder::default()
-        .layout_tests(false)
-        .derive_default(true)
-        .prepend_enum_name(false)
+    let mut bindings = builder()
         .header(wrapper)
-        .clang_arg("-xc++")
-        .trust_clang_mangling(false)
-        .default_non_copy_union_style(bindgen::NonCopyUnionStyle::ManuallyDrop)
-        .allowlist_file(r".*(/|\\)ffx-fsr2-api(/|\\)[^/\\]+\.h")
-        .blocklist_type("widechar")
-        .new_type_alias("CommandList")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .parse_callbacks(Box::new(Renamer))
-        .rustified_enum("FfxFsr2MsgType")
-        .rustified_enum("FfxResourceStates");
+        .allowlist_file(r".*ffx-fsr2-api(/|\\).*\.h");
 
     if cfg!(not(target_os = "windows")) {
         bindings = bindings.clang_args(["-DFFX_GCC"]);
@@ -51,7 +61,6 @@ pub fn generate_bindings(api_dir: &str) {
 
     let bindings = bindings.generate().expect("Unable to generate bindings");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_path = PathBuf::from(&format!("{}/src/", env!("CARGO_MANIFEST_DIR")));
     bindings
         .write_to_file(out_path.join("bindings.rs"))
@@ -62,20 +71,12 @@ pub fn generate_vk_bindings(api_dir: &str, vk_include_dir: &str) {
     let wrapper = format!("{}/ffx_fsr2.h", api_dir);
     let wrapper_api = format!("{}/vk/ffx_fsr2_vk.h", api_dir);
 
-    // Generate bindings
-    let mut bindings = bindgen::Builder::default()
-        .layout_tests(false)
-        .derive_default(true)
-        .prepend_enum_name(false)
+    let mut bindings = builder()
         .header(wrapper)
-        .header(&wrapper_api)
-        .clang_arg("-xc++")
-        .trust_clang_mangling(false)
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .parse_callbacks(Box::new(Renamer))
+        .header(wrapper_api)
         .clang_arg(format!("-I{}", vk_include_dir))
         .allowlist_recursively(false)
-        .allowlist_file(&wrapper_api);
+        .allowlist_file(r".*vk(/|\\).*\.h");
 
     if cfg!(not(target_os = "windows")) {
         bindings = bindings.clang_args(["-DFFX_GCC"]).clang_arg("-std=c++2a");
@@ -83,7 +84,6 @@ pub fn generate_vk_bindings(api_dir: &str, vk_include_dir: &str) {
 
     let bindings = bindings.generate().expect("Unable to generate bindings");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_path = PathBuf::from(&format!("{}/src/", env!("CARGO_MANIFEST_DIR")));
     bindings
         .write_to_file(out_path.join("vk_bindings.rs"))
@@ -94,23 +94,14 @@ pub fn generate_d3d12_bindings(api_dir: &str) {
     let wrapper = format!("{}/ffx_fsr2.h", api_dir);
     let wrapper_api = format!("{}/dx12/ffx_fsr2_dx12.h", api_dir);
 
-    // Generate bindings
-    let bindings = bindgen::Builder::default()
-        .layout_tests(false)
-        .derive_default(true)
-        .prepend_enum_name(false)
+    let bindings = builder()
         .header(wrapper)
-        .header(&wrapper_api)
-        .clang_arg("-xc++")
-        .trust_clang_mangling(false)
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .parse_callbacks(Box::new(Renamer))
+        .header(wrapper_api)
         .allowlist_recursively(false)
-        .allowlist_file(&wrapper_api)
+        .allowlist_file(r".*dx12(/|\\).*\.h")
         .generate()
         .expect("Unable to generate bindings");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_path = PathBuf::from(&format!("{}/src/", env!("CARGO_MANIFEST_DIR")));
     bindings
         .write_to_file(out_path.join("d3d12_bindings.rs"))

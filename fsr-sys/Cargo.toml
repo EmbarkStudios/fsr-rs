@@ -9,15 +9,21 @@ license = "MIT"
 repository = "https://github.com/EmbarkStudios/fsr-rs"
 
 [dependencies]
-widestring = "1.0"
+ash = { version = "0.38", features = ["linked"], optional = true }
+# d3d12 = { version = "0.19.0", optional = true }
+
+[dev-dependencies]
+fsr-sys = { path = ".", features = ["generate-bindings", "vulkan", "d3d12"] }
 
 [build-dependencies]
 bindgen = { version = "0.69", optional = true }
-cc = "1.0"
-glob = "0.3"
+cmake = "0.1"
+fs_extra = "1.2"
+regex = "1"
 
 [features]
-vulkan = []
-d3d12 = []
+vulkan = ["dep:ash"]
+d3d12 = [
+    # "dep:d3d12"
+]
 generate-bindings = ["dep:bindgen"]
-
