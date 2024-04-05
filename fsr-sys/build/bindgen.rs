@@ -1,6 +1,6 @@
 use std::{env, path::PathBuf};
 
-use bindgen::Builder;
+use bindgen::{callbacks::ItemKind, Builder};
 use regex::Regex;
 
 #[derive(Debug)]
@@ -35,6 +35,22 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
                 .replace_all(original_variant_name, "")
                 .to_string(),
         )
+    }
+
+    fn generated_name_override(
+        &self,
+        item_info: bindgen::callbacks::ItemInfo<'_>,
+    ) -> Option<String> {
+        if let ItemKind::Function = item_info.kind {
+            if self.pattern.is_match(item_info.name) {
+                let mut name = self.pattern.replace_all(item_info.name, "").to_string();
+                if name.len() > 1 {
+                    name[..1].make_ascii_lowercase();
+                }
+                return Some(name);
+            }
+        }
+        None
     }
 }
 

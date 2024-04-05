@@ -1343,7 +1343,7 @@ pub type AssertCallback =
     ::std::option::Option<unsafe extern "C" fn(message: *const ::std::os::raw::c_char)>;
 extern "C" {
     #[link_name = "\u{1}ffxAssertReport"]
-    pub fn AssertReport(
+    pub fn assertReport(
         file: *const ::std::os::raw::c_char,
         line: i32,
         condition: *const ::std::os::raw::c_char,
@@ -1352,7 +1352,7 @@ extern "C" {
 }
 extern "C" {
     #[link_name = "\u{1}ffxAssertSetPrintingCallback"]
-    pub fn AssertSetPrintingCallback(callback: AssertCallback);
+    pub fn assertSetPrintingCallback(callback: AssertCallback);
 }
 pub type ErrorCode = i32;
 pub const OK: ErrorCode = 0;
@@ -2221,36 +2221,36 @@ impl Default for Context {
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2ContextCreate"]
-    pub fn ContextCreate(
+    pub fn contextCreate(
         context: *mut Context,
         contextDescription: *const ContextDescription,
     ) -> ErrorCode;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2ContextDispatch"]
-    pub fn ContextDispatch(
+    pub fn contextDispatch(
         context: *mut Context,
         dispatchDescription: *const DispatchDescription,
     ) -> ErrorCode;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2ContextGenerateReactiveMask"]
-    pub fn ContextGenerateReactiveMask(
+    pub fn contextGenerateReactiveMask(
         context: *mut Context,
         params: *const GenerateReactiveDescription,
     ) -> ErrorCode;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2ContextDestroy"]
-    pub fn ContextDestroy(context: *mut Context) -> ErrorCode;
+    pub fn contextDestroy(context: *mut Context) -> ErrorCode;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetUpscaleRatioFromQualityMode"]
-    pub fn GetUpscaleRatioFromQualityMode(qualityMode: QualityMode) -> f32;
+    pub fn getUpscaleRatioFromQualityMode(qualityMode: QualityMode) -> f32;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetRenderResolutionFromQualityMode"]
-    pub fn GetRenderResolutionFromQualityMode(
+    pub fn getRenderResolutionFromQualityMode(
         renderWidth: *mut u32,
         renderHeight: *mut u32,
         displayWidth: u32,
@@ -2260,11 +2260,11 @@ extern "C" {
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetJitterPhaseCount"]
-    pub fn GetJitterPhaseCount(renderWidth: i32, displayWidth: i32) -> i32;
+    pub fn getJitterPhaseCount(renderWidth: i32, displayWidth: i32) -> i32;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetJitterOffset"]
-    pub fn GetJitterOffset(
+    pub fn getJitterOffset(
         outX: *mut f32,
         outY: *mut f32,
         index: i32,
@@ -2273,5 +2273,5 @@ extern "C" {
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2ResourceIsNull"]
-    pub fn ResourceIsNull(resource: Resource) -> bool;
+    pub fn resourceIsNull(resource: Resource) -> bool;
 }

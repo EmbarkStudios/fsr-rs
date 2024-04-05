@@ -64,12 +64,12 @@ fn build_fsr(api_dir: &str) {
 }
 
 fn main() {
-    let api_dir = "./FidelityFX-FSR2/src/ffx-fsr2-api/";
-
-    build_fsr(api_dir);
+    #[cfg(not(target_os = "macos"))]
+    build_fsr("./FidelityFX-FSR2/src/ffx-fsr2-api/");
 
     #[cfg(feature = "generate-bindings")]
     {
+        let api_dir = "./FidelityFX-FSR2/src/ffx-fsr2-api/";
         let vk_include_dir = "./Vulkan-Headers/include/";
         bindgen::generate_bindings(api_dir);
         bindgen::generate_vk_bindings(api_dir, vk_include_dir);
