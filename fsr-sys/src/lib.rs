@@ -8,11 +8,15 @@ include!("bindings.rs");
 #[cfg(feature = "vulkan")]
 pub mod vk {
     use super::*;
-    use ash::vk::{
-        Buffer as VkBuffer, CommandBuffer as VkCommandBuffer, Device as VkDevice,
-        Format as VkFormat, Image as VkImage, ImageLayout as VkImageLayout,
-        ImageView as VkImageView, PFN_vkGetDeviceProcAddr, PhysicalDevice as VkPhysicalDevice,
-    };
+    type VkPhysicalDevice = u64;
+    type VkDevice = u64;
+    type VkCommandBuffer = u64;
+    type PFN_vkGetDeviceProcAddr = *const std::ffi::c_void;
+    type VkBuffer = u64;
+    type VkImage = u64;
+    type VkImageView = u64;
+    type VkFormat = i32;
+    type VkImageLayout = i32;
 
     include!("vk_bindings.rs");
 }
