@@ -5,14 +5,14 @@ use regex::Regex;
 
 #[derive(Debug)]
 struct Renamer {
-    pattern: Regex,
+    prefix: Regex,
     suffix: Regex,
 }
 
 impl Renamer {
     fn new() -> Self {
         Self {
-            pattern: Regex::new(r"(?i)^ffx_?(fsr2)?_?").unwrap(),
+            prefix: Regex::new(r"(?i)^ffx_?(fsr2)?_?").unwrap(),
             suffix: Regex::new("(DX12|VK)$").unwrap(),
         }
     }
@@ -20,7 +20,7 @@ impl Renamer {
 impl bindgen::callbacks::ParseCallbacks for Renamer {
     fn item_name(&self, name: &str) -> Option<String> {
         // Remove ffx/ffxfsr2 prefixes.
-        let name = self.pattern.replace_all(name, "").to_string();
+        let name = self.prefix.replace_all(name, "").to_string();
 
         Some(name)
     }
@@ -33,7 +33,7 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
         _variant_value: bindgen::callbacks::EnumVariantValue,
     ) -> Option<String> {
         Some(
-            self.pattern
+            self.prefix
                 .replace_all(original_variant_name, "")
                 .to_string(),
         )
@@ -44,8 +44,8 @@ impl bindgen::callbacks::ParseCallbacks for Renamer {
         item_info: bindgen::callbacks::ItemInfo<'_>,
     ) -> Option<String> {
         if let ItemKind::Function = item_info.kind {
-            if self.pattern.is_match(item_info.name) {
-                let name = self.pattern.replace_all(item_info.name, "");
+            if self.prefix.is_match(item_info.name) {
+                let name = self.prefix.replace_all(item_info.name, "");
                 let mut name = self.suffix.replace_all(&name, "").to_string();
                 if name.len() > 1 {
                     name[..1].make_ascii_lowercase();
