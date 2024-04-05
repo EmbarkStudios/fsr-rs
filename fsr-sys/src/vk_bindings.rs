@@ -2,11 +2,11 @@
 
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetScratchMemorySizeVK"]
-    pub fn getScratchMemorySizeVK(physicalDevice: VkPhysicalDevice) -> usize;
+    pub fn getScratchMemorySize(physicalDevice: VkPhysicalDevice) -> usize;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetInterfaceVK"]
-    pub fn getInterfaceVK(
+    pub fn getInterface(
         outInterface: *mut Interface,
         scratchBuffer: *mut ::std::os::raw::c_void,
         scratchBufferSize: usize,
@@ -16,15 +16,15 @@ extern "C" {
 }
 extern "C" {
     #[link_name = "\u{1}ffxGetDeviceVK"]
-    pub fn getDeviceVK(device: VkDevice) -> Device;
+    pub fn getDevice(device: VkDevice) -> Device;
 }
 extern "C" {
     #[link_name = "\u{1}ffxGetCommandListVK"]
-    pub fn getCommandListVK(cmdBuf: VkCommandBuffer) -> CommandList;
+    pub fn getCommandList(cmdBuf: VkCommandBuffer) -> CommandList;
 }
 extern "C" {
     #[link_name = "\u{1}ffxGetTextureResourceVK"]
-    pub fn getTextureResourceVK(
+    pub fn getTextureResource(
         context: *mut Context,
         imgVk: VkImage,
         imageView: VkImageView,
@@ -37,7 +37,7 @@ extern "C" {
 }
 extern "C" {
     #[link_name = "\u{1}ffxGetBufferResourceVK"]
-    pub fn getBufferResourceVK(
+    pub fn getBufferResource(
         context: *mut Context,
         bufVk: VkBuffer,
         size: u32,

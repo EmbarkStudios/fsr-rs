@@ -2,11 +2,11 @@
 
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetScratchMemorySizeDX12"]
-    pub fn getScratchMemorySizeDX12() -> usize;
+    pub fn getScratchMemorySize() -> usize;
 }
 extern "C" {
     #[link_name = "\u{1}ffxFsr2GetInterfaceDX12"]
-    pub fn getInterfaceDX12(
+    pub fn getInterface(
         fsr2Interface: *mut Interface,
         device: *mut ID3D12Device,
         scratchBuffer: *mut ::std::os::raw::c_void,
@@ -15,15 +15,15 @@ extern "C" {
 }
 extern "C" {
     #[link_name = "\u{1}ffxGetDeviceDX12"]
-    pub fn getDeviceDX12(device: *mut ID3D12Device) -> Device;
+    pub fn getDevice(device: *mut ID3D12Device) -> Device;
 }
 extern "C" {
     #[link_name = "\u{1}ffxGetCommandListDX12"]
-    pub fn getCommandListDX12(cmdList: *mut ID3D12CommandList) -> CommandList;
+    pub fn getCommandList(cmdList: *mut ID3D12CommandList) -> CommandList;
 }
 extern "C" {
     #[link_name = "\u{1}ffxGetResourceDX12"]
-    pub fn getResourceDX12(
+    pub fn getResource(
         context: *mut Context,
         resDx12: *mut ID3D12Resource,
         name: *const u16,
