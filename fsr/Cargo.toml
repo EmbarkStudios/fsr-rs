@@ -1,7 +1,7 @@
 [package]
 name = "fsr"
 description = "FidelityFX Super Resolution 2 bindings for rust."
-version = "0.1.9"
+version = "0.1.10"
 edition = "2021"
 authors = ["Embark <opensource@embark-studios.com>"]
 license = "MIT"
@@ -11,10 +11,10 @@ repository = "https://github.com/EmbarkStudios/fsr-rs"
 widestring = "1.0"
 bitflags = "2.4"
 thiserror = "1.0"
-fsr-sys = { version = "0.1.9", path = "../fsr-sys", default-features = false }
+fsr-sys = { version = "0.1.10", path = "../fsr-sys", default-features = false }
 
 [dependencies.ash]
-version = "0.37"
+version = "0.38"
 optional = true
 
 [dependencies.windows]
