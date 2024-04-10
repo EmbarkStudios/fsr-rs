@@ -62,20 +62,20 @@ pub struct Context {
 #[repr(i32)]
 #[derive(Debug)]
 pub enum FsrError {
-    InvalidPointer = fsr_sys::FFX_ERROR_INVALID_POINTER,
-    InvalidAlignment = fsr_sys::FFX_ERROR_INVALID_ALIGNMENT,
-    InvalidSize = fsr_sys::FFX_ERROR_INVALID_SIZE,
-    Eof = fsr_sys::FFX_ERROR_EOF,
-    InvalidPath = fsr_sys::FFX_ERROR_INVALID_PATH,
-    MalfmoredData = fsr_sys::FFX_ERROR_MALFORMED_DATA,
-    OutOfMemory = fsr_sys::FFX_ERROR_OUT_OF_MEMORY,
-    IncompleteInterface = fsr_sys::FFX_ERROR_INCOMPLETE_INTERFACE,
-    InvalidEnum = fsr_sys::FFX_ERROR_INVALID_ENUM,
-    InvalidArgument = fsr_sys::FFX_ERROR_INVALID_ARGUMENT,
-    OutOfRange = fsr_sys::FFX_ERROR_OUT_OF_RANGE,
-    NullDevice = fsr_sys::FFX_ERROR_NULL_DEVICE,
-    BackendApiError = fsr_sys::FFX_ERROR_BACKEND_API_ERROR,
-    InsufficientMemory = fsr_sys::FFX_ERROR_INSUFFICIENT_MEMORY,
+    InvalidPointer = fsr_sys::ERROR_INVALID_POINTER,
+    InvalidAlignment = fsr_sys::ERROR_INVALID_ALIGNMENT,
+    InvalidSize = fsr_sys::ERROR_INVALID_SIZE,
+    Eof = fsr_sys::ERROR_EOF,
+    InvalidPath = fsr_sys::ERROR_INVALID_PATH,
+    MalfmoredData = fsr_sys::ERROR_MALFORMED_DATA,
+    OutOfMemory = fsr_sys::ERROR_OUT_OF_MEMORY,
+    IncompleteInterface = fsr_sys::ERROR_INCOMPLETE_INTERFACE,
+    InvalidEnum = fsr_sys::ERROR_INVALID_ENUM,
+    InvalidArgument = fsr_sys::ERROR_INVALID_ARGUMENT,
+    OutOfRange = fsr_sys::ERROR_OUT_OF_RANGE,
+    NullDevice = fsr_sys::ERROR_NULL_DEVICE,
+    BackendApiError = fsr_sys::ERROR_BACKEND_API_ERROR,
+    InsufficientMemory = fsr_sys::ERROR_INSUFFICIENT_MEMORY,
     Unknown = 0,
 }
 
@@ -90,20 +90,20 @@ impl std::error::Error for FsrError {}
 impl FsrError {
     fn from_error_code(value: fsr_sys::ErrorCode) -> Self {
         match value {
-            fsr_sys::FFX_ERROR_INVALID_POINTER => Self::InvalidPointer,
-            fsr_sys::FFX_ERROR_INVALID_ALIGNMENT => Self::InvalidAlignment,
-            fsr_sys::FFX_ERROR_INVALID_SIZE => Self::InvalidSize,
-            fsr_sys::FFX_ERROR_EOF => Self::Eof,
-            fsr_sys::FFX_ERROR_INVALID_PATH => Self::InvalidPath,
-            fsr_sys::FFX_ERROR_MALFORMED_DATA => Self::MalfmoredData,
-            fsr_sys::FFX_ERROR_OUT_OF_MEMORY => Self::OutOfMemory,
-            fsr_sys::FFX_ERROR_INCOMPLETE_INTERFACE => Self::IncompleteInterface,
-            fsr_sys::FFX_ERROR_INVALID_ENUM => Self::InvalidEnum,
-            fsr_sys::FFX_ERROR_INVALID_ARGUMENT => Self::InvalidArgument,
-            fsr_sys::FFX_ERROR_OUT_OF_RANGE => Self::OutOfRange,
-            fsr_sys::FFX_ERROR_NULL_DEVICE => Self::NullDevice,
-            fsr_sys::FFX_ERROR_BACKEND_API_ERROR => Self::BackendApiError,
-            fsr_sys::FFX_ERROR_INSUFFICIENT_MEMORY => Self::InsufficientMemory,
+            fsr_sys::ERROR_INVALID_POINTER => Self::InvalidPointer,
+            fsr_sys::ERROR_INVALID_ALIGNMENT => Self::InvalidAlignment,
+            fsr_sys::ERROR_INVALID_SIZE => Self::InvalidSize,
+            fsr_sys::ERROR_EOF => Self::Eof,
+            fsr_sys::ERROR_INVALID_PATH => Self::InvalidPath,
+            fsr_sys::ERROR_MALFORMED_DATA => Self::MalfmoredData,
+            fsr_sys::ERROR_OUT_OF_MEMORY => Self::OutOfMemory,
+            fsr_sys::ERROR_INCOMPLETE_INTERFACE => Self::IncompleteInterface,
+            fsr_sys::ERROR_INVALID_ENUM => Self::InvalidEnum,
+            fsr_sys::ERROR_INVALID_ARGUMENT => Self::InvalidArgument,
+            fsr_sys::ERROR_OUT_OF_RANGE => Self::OutOfRange,
+            fsr_sys::ERROR_NULL_DEVICE => Self::NullDevice,
+            fsr_sys::ERROR_BACKEND_API_ERROR => Self::BackendApiError,
+            fsr_sys::ERROR_INSUFFICIENT_MEMORY => Self::InsufficientMemory,
             _ => Self::Unknown,
         }
     }
@@ -148,15 +148,15 @@ impl From<&ContextDescription<'_>> for fsr_sys::ContextDescription {
 
 bitflags::bitflags! {
     pub struct InitializationFlagBits: u32 {
-        const ENABLE_DEBUG_CHECKING = fsr_sys::FFX_FSR2_ENABLE_DEBUG_CHECKING as u32;
-        const ENABLE_DEPTH_INFINITE = fsr_sys::FFX_FSR2_ENABLE_DEPTH_INFINITE as u32;
-        const ENABLE_DEPTH_INVERTED = fsr_sys::FFX_FSR2_ENABLE_DEPTH_INVERTED as u32;
-        const ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS = fsr_sys::FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS as u32;
-        const ENABLE_DYNAMIC_RESOLUTION = fsr_sys::FFX_FSR2_ENABLE_DYNAMIC_RESOLUTION as u32;
-        const ENABLE_HIGH_DYNAMIC_RANGE = fsr_sys::FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE as u32;
-        const ENABLE_MOTION_VECTORS_JITTER_CANCELLATION = fsr_sys::FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION as u32;
-        const ENABLE_TEXTURE1D_USAGE = fsr_sys::FFX_FSR2_ENABLE_TEXTURE1D_USAGE as u32;
-        const ENABLE_AUTO_EXPOSURE = fsr_sys::FFX_FSR2_ENABLE_AUTO_EXPOSURE as u32;
+        const ENABLE_DEBUG_CHECKING = fsr_sys::ENABLE_DEBUG_CHECKING as u32;
+        const ENABLE_DEPTH_INFINITE = fsr_sys::ENABLE_DEPTH_INFINITE as u32;
+        const ENABLE_DEPTH_INVERTED = fsr_sys::ENABLE_DEPTH_INVERTED as u32;
+        const ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS = fsr_sys::ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS as u32;
+        const ENABLE_DYNAMIC_RESOLUTION = fsr_sys::ENABLE_DYNAMIC_RESOLUTION as u32;
+        const ENABLE_HIGH_DYNAMIC_RANGE = fsr_sys::ENABLE_HIGH_DYNAMIC_RANGE as u32;
+        const ENABLE_MOTION_VECTORS_JITTER_CANCELLATION = fsr_sys::ENABLE_MOTION_VECTORS_JITTER_CANCELLATION as u32;
+        const ENABLE_TEXTURE1D_USAGE = fsr_sys::ENABLE_TEXTURE1D_USAGE as u32;
+        const ENABLE_AUTO_EXPOSURE = fsr_sys::ENABLE_AUTO_EXPOSURE as u32;
     }
 }
 
@@ -355,7 +355,7 @@ impl Context {
         let mut context = Box::<fsr_sys::Context>::default();
         unsafe {
             let error = fsr_sys::ContextCreate(context.as_mut(), &(&desc).into());
-            if error != fsr_sys::FFX_OK {
+            if error != fsr_sys::OK {
                 return Err(Error::Fsr(FsrError::from_error_code(error)));
             }
         }
@@ -367,7 +367,7 @@ impl Context {
 
     pub unsafe fn dispatch(&mut self, desc: DispatchDescription) -> Result<(), Error> {
         let error = unsafe { fsr_sys::ContextDispatch(self.context.as_mut(), &desc.into()) };
-        if error != fsr_sys::FFX_OK {
+        if error != fsr_sys::OK {
             return Err(Error::Fsr(FsrError::from_error_code(error)));
         }
         Ok(())
@@ -375,7 +375,7 @@ impl Context {
 
     pub unsafe fn destroy(&mut self) -> Result<(), Error> {
         let error = unsafe { fsr_sys::ContextDestroy(self.context.as_mut()) };
-        if error != fsr_sys::FFX_OK {
+        if error != fsr_sys::OK {
             return Err(Error::Fsr(FsrError::from_error_code(error)));
         }
         Ok(())

@@ -1,3 +1,6 @@
 [submodule "Vulkan-Headers"]
 	path = fsr-sys/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "fsr-sys/FidelityFX-FSR2"]
+	path = fsr-sys/FidelityFX-FSR2
+	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR2.git

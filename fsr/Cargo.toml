@@ -18,14 +18,11 @@ version = "0.38"
 optional = true
 
 [dependencies.windows]
-version = "0.51"
+version = "0.54"
 optional = true
-features = [
-    "Win32_Graphics_Direct3D12"
-]
+features = ["Win32_Graphics_Direct3D12"]
 
 [features]
 default = []
 vulkan = ["fsr-sys/vulkan", "dep:ash"]
 d3d12 = ["fsr-sys/d3d12", "dep:windows"]
-
