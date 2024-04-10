@@ -121,11 +121,9 @@ dependencies = [
 name = "fsr-sys"
 version = "0.1.9"
 dependencies = [
- "ash",
  "bindgen",
  "cmake",
  "fs_extra",
- "fsr-sys",
  "regex",
 ]
 

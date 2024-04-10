@@ -11,7 +11,6 @@ repository = "https://github.com/EmbarkStudios/fsr-rs"
 [dependencies]
 
 [dev-dependencies]
-fsr-sys = { path = ".", features = ["generate-bindings"] }
 
 [build-dependencies]
 bindgen = { version = "0.69", optional = true }
