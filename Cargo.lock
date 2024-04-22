@@ -99,7 +99,6 @@ version = "0.1.9"
 dependencies = [
  "bindgen",
  "cc",
- "glob",
  "widestring",
 ]
 
